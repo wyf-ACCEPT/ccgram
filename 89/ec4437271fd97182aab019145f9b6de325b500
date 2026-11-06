@@ -1,0 +1,23 @@
+src/ccgram/handlers/status/status_bubble.py
+  s_b2124aec123848::t_fad098f82d207b 55-56,362,370-374,398-406,417,437,516
+tests/ccgram/handlers/status/test_status_bubble.py
+  s_b2124aec123848::t_28d875ccae1c76 172-194
+src/ccgram/config.py
+  s_b2124aec123848::t_fad098f82d207b 249-253
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "89ec4437271fd97182aab019145f9b6de325b500",
+  "prompts": {},
+  "sessions": {
+    "s_b2124aec123848": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18ac8cf0-4e04-48f5-9762-6f450759501c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
