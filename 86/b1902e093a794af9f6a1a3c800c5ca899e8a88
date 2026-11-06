@@ -1,0 +1,101 @@
+tests/ccgram/fixtures/hc/terminal_read_history.json
+  s_b2124aec123848::t_5d574745476ee1 1-10
+tests/ccgram/test_self_identify.py
+  s_b2124aec123848::t_2116961368ba52 119-135,141-146,152-163,311-319
+  s_b2124aec123848::t_76b73168d13f67 136-140,147-151
+  s_b2124aec123848::t_af6982245fbb32 320
+tests/ccgram/test_doctor_cmd.py
+  s_b2124aec123848::t_d96451dd11f0ff 11,13,479-514,518-550
+  s_b2124aec123848::t_76b73168d13f67 515-517
+  s_b2124aec123848::t_b11cb8cf437e82 551-552
+src/ccgram/multiplexer/hc_events.py
+  s_b2124aec123848::t_dc115ff85b15a5 1-240
+src/ccgram/multiplexer/hc.py
+  s_b2124aec123848::t_1362419677eefd 796-798,1048-1090,1127-1131
+  s_b2124aec123848::t_9fca6e6bdabf35 981
+  s_b2124aec123848::t_8fc1243d566e76 1234
+  s_b2124aec123848::t_a9ff7879fb30bb 1-99,103-232,234-540,544-780,784-795,799-980,982-1047,1091-1126,1132-1233,1235-1253
+  s_b2124aec123848::t_76b73168d13f67 100-102,233,541-543,781-783
+tests/ccgram/fixtures/hc/terminal_list.json
+  s_b2124aec123848::t_5d574745476ee1 1-396
+tests/ccgram/test_hc_backend.py
+  s_b2124aec123848::t_ae66ffa8190744 1-143,148-158,166-248,252-265,269-355,359-389,393-432,435,438,442-443,447,449-459,463-479,481-522,524-628,641-733,737-751,773-817,826-839,845-889,893-917,921-959,968-975,981-997,1004-1008,1014-1046,1052-1059
+  s_b2124aec123848::t_9fca6e6bdabf35 523,640
+  s_b2124aec123848::t_4e02089145cab5 159-165,444-446,448,480
+  s_b2124aec123848::t_76b73168d13f67 144-147,249-251,266-268,356-358,390-392,433-434,436-437,439-441,460-462,629-639,734-736,752-772,818-825,840-844,890-892,918-920,960-967,976-980,998-1003,1009-1013,1047-1051
+tests/ccgram/test_hc_events.py
+  s_b2124aec123848::t_189309d94e7f9a 1-12,14-94,98-108,113-298,300-317,319-378,382-391,397-419,429-444,450-456
+  s_b2124aec123848::t_0a120e42bd905c 13,299,318
+  s_b2124aec123848::t_76b73168d13f67 95-97,109-112,379-381,392-396,420-428,445-449
+pyproject.toml
+  s_b2124aec123848::t_d9851cec4fe4d4 155
+src/ccgram/multiplexer/reconciliation.py
+  s_b2124aec123848::t_3a3d7834d4a370 20-25,32
+docs/guides.md
+  s_b2124aec123848::t_0cf1a4070c2420 211,454-465
+  s_b2124aec123848::t_6a4d9f8b85e454 466
+src/ccgram/status_cmd.py
+  s_b2124aec123848::t_7f470043812d88 40-43,194-195
+tests/ccgram/fixtures/hc/terminal_get_t5.json
+  s_b2124aec123848::t_5d574745476ee1 1-53
+tests/ccgram/fixtures/hc/terminal_run.json
+  s_b2124aec123848::t_5d574745476ee1 1-39
+tests/integration/test_hc_live.py
+  s_b2124aec123848::t_c6df77e441017b 154-156
+  s_b2124aec123848::t_9c2e5e147a73e8 1-153,157-159
+src/ccgram/multiplexer/hc_socket.py
+  s_b2124aec123848::t_b1fc6e025525b5 1-148,152-209
+  s_b2124aec123848::t_76b73168d13f67 149-151
+src/ccgram/hook.py
+  s_b2124aec123848::t_5ce8666ba38265 1638,1642-1643
+tests/ccgram/fixtures/hc/events.jsonl
+  s_b2124aec123848::t_5d574745476ee1 1-10
+.claude/rules/architecture.md
+  s_b2124aec123848::t_0cf1a4070c2420 19,25-28,33,249
+tests/ccgram/test_status_cmd.py
+  s_b2124aec123848::t_76b73168d13f67 304-308
+  s_b2124aec123848::t_d96451dd11f0ff 300-303,309-324
+src/ccgram/session_lifecycle.py
+  s_b2124aec123848::t_3a3d7834d4a370 35
+src/ccgram/config.py
+  s_b2124aec123848::t_8723687775b9b1 384-388
+tests/ccgram/fixtures/hc/terminal_read_screen.json
+  s_b2124aec123848::t_5d574745476ee1 1-10
+tests/ccgram/test_multiplexer_contract.py
+  s_b2124aec123848::t_d96451dd11f0ff 24,166-192,427-453,459
+src/ccgram/multiplexer/self_identify.py
+  s_b2124aec123848::t_aee15e1cb03033 64-65
+  s_b2124aec123848::t_5ce8666ba38265 7-8,40-42,69-76,118-127
+  s_b2124aec123848::t_de3cb42151eb6d 128-130
+tests/ccgram/fixtures/hc/hello.json
+  s_b2124aec123848::t_5d574745476ee1 1-56
+tests/ccgram/fixtures/hc/probe_input_results.json
+  s_b2124aec123848::t_5d574745476ee1 1-38
+tests/conftest.py
+  s_b2124aec123848::t_d9851cec4fe4d4 50-53
+src/ccgram/doctor_cmd.py
+  s_b2124aec123848::t_f7d63ada34eaa6 45,165-194,566-569
+src/ccgram/multiplexer/registry.py
+  s_b2124aec123848::t_8723687775b9b1 9-11,55-63,68,104-110,122-123
+tests/ccgram/test_multiplexer_registry.py
+  s_b2124aec123848::t_2116961368ba52 49,152-173
+  s_b2124aec123848::t_ae803fbcc09e77 174
+tests/ccgram/test_multiplexer_boundary.py
+  s_b2124aec123848::t_d9851cec4fe4d4 36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "86b1902e093a794af9f6a1a3c800c5ca899e8a88",
+  "prompts": {},
+  "sessions": {
+    "s_b2124aec123848": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18ac8cf0-4e04-48f5-9762-6f450759501c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
