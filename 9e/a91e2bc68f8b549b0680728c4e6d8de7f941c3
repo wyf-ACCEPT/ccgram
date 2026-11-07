@@ -1,0 +1,26 @@
+src/ccgram/handlers/text/text_handler.py
+  s_b2124aec123848::t_616bb0fc5feaa9 100-102,618,662,664
+  s_b2124aec123848::t_4bca87fd3ed679 606,663,727
+  s_b2124aec123848::t_6fca7c97f38da5 665-674
+src/ccgram/handlers/interactive/interactive_callbacks.py
+  s_b2124aec123848::t_8ee465cc027398 64-67,168,170-176,201-205,220,253,405
+tests/ccgram/handlers/interactive/test_question_choices.py
+  s_b2124aec123848::t_fa986687ffc900 8,153-157,162-164,170,194-198,200,202,209
+  s_b2124aec123848::t_4bca87fd3ed679 160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9ea91e2bc68f8b549b0680728c4e6d8de7f941c3",
+  "prompts": {},
+  "sessions": {
+    "s_b2124aec123848": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18ac8cf0-4e04-48f5-9762-6f450759501c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
