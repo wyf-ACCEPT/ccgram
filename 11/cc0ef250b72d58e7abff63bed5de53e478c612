@@ -1,0 +1,21 @@
+src/ccgram/handlers/polling/window_tick/apply.py
+  s_b2124aec123848::t_c26c6cd10fd3fe 138,584-598,633,643
+tests/ccgram/handlers/polling/test_window_tick.py
+  s_b2124aec123848::t_ac700a6d104658 288-320
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "11cc0ef250b72d58e7abff63bed5de53e478c612",
+  "prompts": {},
+  "sessions": {
+    "s_b2124aec123848": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18ac8cf0-4e04-48f5-9762-6f450759501c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
