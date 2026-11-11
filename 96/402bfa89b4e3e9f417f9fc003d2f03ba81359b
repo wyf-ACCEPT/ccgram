@@ -1,0 +1,45 @@
+src/ccgram/handlers/callback_helpers.py
+  s_1dcf832b515331::t_6d97e1406225c1 8-11,18-38
+  s_1dcf832b515331::t_215c73ab6152b0 39-40
+src/ccgram/handlers/callback_registry.py
+  s_1dcf832b515331::t_f88bd9c5f952d2 20,23-28
+  s_1dcf832b515331::t_6d97e1406225c1 84,86-102,104-110,116,123
+src/ccgram/handlers/live/screenshot_callbacks.py
+  s_1dcf832b515331::t_6d7fccad578207 671
+  s_1dcf832b515331::t_27412ef08bcf09 47-52
+  s_1dcf832b515331::t_f88bd9c5f952d2 665-667
+tests/ccgram/handlers/guest/test_buttons_and_outbox.py
+  s_1dcf832b515331::t_ba99c4fbd40b87 1-210
+src/ccgram/handlers/guest/outbox.py
+  s_1dcf832b515331::t_a553f547f4a1a4 1-159
+src/ccgram/handlers/polling/periodic_tasks.py
+  s_1dcf832b515331::t_fad3ce36349aac 22,43-44,67-69
+  s_1dcf832b515331::t_6f657e50a8b3d1 70
+src/ccgram/handlers/status/status_bar_actions.py
+  s_1dcf832b515331::t_27412ef08bcf09 50-55
+  s_1dcf832b515331::t_f88bd9c5f952d2 568-570
+  s_1dcf832b515331::t_6d7fccad578207 574
+  s_1dcf832b515331::t_61255715bb9ab0 352-355
+src/ccgram/handlers/status/status_bubble.py
+  s_1dcf832b515331::t_253ff4cedd3896 79,90-92,104,120-124,126-132,134-140,142-145,153-155,417
+.claude/rules/architecture.md
+  s_1dcf832b515331::t_5b9f2b24020066 193-194
+docs/guides.md
+  s_1dcf832b515331::t_11537944959fa9 294-297
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "96402bfa89b4e3e9f417f9fc003d2f03ba81359b",
+  "prompts": {},
+  "sessions": {
+    "s_1dcf832b515331": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ad57b95f-05b2-44b6-a5c5-4304a027e8a3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
