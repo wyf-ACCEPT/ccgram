@@ -181,7 +181,6 @@ async def test_owner_gets_buttons_with_the_current_model_ticked(topic) -> None:
         "Fable 5.2",
         "Sonnet 5.5",
         "Haiku 5.5",
-        "Fable 5.1",
     ]
     topic.send.assert_not_awaited()
 
@@ -299,7 +298,7 @@ async def test_pressing_a_codex_model_types_it(topic, owns, tmp_path: Path) -> N
 
 async def test_claudes_cache_question_comes_as_buttons(topic, owns) -> None:
     topic.switch.return_value = "confirm"
-    update, query = _press(f"{CB_MODEL}{WINDOW}|claude-fable-5-1")
+    update, query = _press(f"{CB_MODEL}{WINDOW}|claude-fable-5-2")
     await model_command._model_callback(update, MagicMock())
     text = topic.edit.await_args.args[1]
     assert "re-read the whole conversation" in text
@@ -312,7 +311,7 @@ async def test_claudes_cache_question_comes_as_buttons(topic, owns) -> None:
 
 async def test_a_failed_switch_is_reported(topic, owns) -> None:
     topic.switch.return_value = "the model menu did not open"
-    update, query = _press(f"{CB_MODEL}{WINDOW}|claude-fable-5-1")
+    update, query = _press(f"{CB_MODEL}{WINDOW}|claude-fable-5-2")
     await model_command._model_callback(update, MagicMock())
     assert (
         "Could not switch xy-task: the model menu did not open"
