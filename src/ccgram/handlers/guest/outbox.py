@@ -4,6 +4,12 @@ A guest chat has no file browser ("Get File"), so the session delivers files
 itself: it saves them to ``<session cwd>/outbox/`` and CCGram sends each one to
 the bound topic as a document, then moves it to ``outbox/sent/``.
 
+Several sessions may share a folder (a guest can run up to three), so each
+file goes to the topic of the session that wrote it: the one whose transcript
+names the file, the most recently written if several do, else the most
+recently active session. Uploads get a long timeout: a timed-out upload may
+still arrive, and a retry would then post it twice.
+
 Only plain files directly inside ``outbox/`` are sent. Symbolic links and files
 with more than one hard link are refused (they could point at anything on the
 computer), and the check is repeated on the open file descriptor.
@@ -12,6 +18,7 @@ computer), and the check is repeated on the open file descriptor.
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 import shutil
 import stat
@@ -35,6 +42,11 @@ MAX_BYTES = 50 * 1024 * 1024  # Bot API upload limit
 # A file younger than this may still be being written.
 SETTLE_S = 3.0
 MAX_ATTEMPTS = 3
+# Seconds for one upload: a few MB through a proxy can take well over the
+# default, and a timed-out upload may still arrive (then retry duplicates it).
+UPLOAD_TIMEOUT_S = 120.0
+# How much of each transcript to search for a file's name.
+TRANSCRIPT_TAIL_BYTES = 4 * 1024 * 1024
 
 _attempts: dict[str, int] = {}
 
@@ -114,6 +126,8 @@ async def _send_one(
                 document=handle,
                 filename=path.name,
                 message_thread_id=thread_id,
+                read_timeout=UPLOAD_TIMEOUT_S,
+                write_timeout=UPLOAD_TIMEOUT_S,
             )
         except RetryAfter:
             return False
@@ -136,10 +150,46 @@ async def _send_one(
     return True
 
 
-async def flush_outboxes(client: TelegramClient) -> None:
-    """Send what every guest-chat session left in its outbox."""
-    if not config.guest_chats:
-        return
+class _Session:
+    """A bound guest-chat session that may own files in an outbox."""
+
+    def __init__(
+        self, chat_id: int, thread_id: int, window_id: str, transcript: Path | None
+    ) -> None:
+        self.chat_id = chat_id
+        self.thread_id = thread_id
+        self.window_id = window_id
+        self.transcript = transcript
+
+    def last_written(self) -> float:
+        try:
+            return self.transcript.stat().st_mtime if self.transcript else 0.0
+        except OSError:
+            return 0.0
+
+    def names(self, filename: str) -> bool:
+        """Whether the end of this session's transcript names *filename*."""
+        if self.transcript is None:
+            return False
+        try:
+            with open(self.transcript, "rb") as f:
+                f.seek(0, os.SEEK_END)
+                f.seek(max(0, f.tell() - TRANSCRIPT_TAIL_BYTES))
+                tail = f.read().decode("utf-8", errors="replace")
+        except OSError:
+            return False
+        # Transcripts are JSON: the name may be stored raw or \u-escaped.
+        return filename in tail or json.dumps(filename)[1:-1] in tail
+
+
+def owner_of(path: Path, sessions: list[_Session]) -> _Session:
+    """The session a file in a shared outbox belongs to."""
+    naming = [s for s in sessions if s.names(path.name)]
+    return max(naming or sessions, key=_Session.last_written)
+
+
+def _sessions_by_outbox() -> dict[Path, list[_Session]]:
+    groups: dict[Path, list[_Session]] = {}
     seen: set[str] = set()
     for user_id, chat_id, thread_id, window_id in session_query.iter_bound_topics():
         if chat_id is None:
@@ -150,8 +200,28 @@ async def flush_outboxes(client: TelegramClient) -> None:
         view = view_window(window_id)
         if view is None or not view.cwd:
             continue
-        for path in pending_files(Path(view.cwd) / OUTBOX_DIR):
-            if not await _send_one(client, chat_id, thread_id, path):
+        outbox = Path(view.cwd) / OUTBOX_DIR
+        groups.setdefault(outbox, []).append(
+            _Session(chat_id, thread_id, window_id, view.transcript_path)
+        )
+    return groups
+
+
+async def flush_outboxes(client: TelegramClient) -> None:
+    """Send what guest-chat sessions left in their outboxes, each to its owner."""
+    if not config.guest_chats:
+        return
+    for outbox, sessions in _sessions_by_outbox().items():
+        for path in pending_files(outbox):
+            owner = owner_of(path, sessions)
+            if len(sessions) > 1:
+                logger.info(
+                    "Outbox file routed",
+                    name=path.name,
+                    window_id=owner.window_id,
+                    candidates=len(sessions),
+                )
+            if not await _send_one(client, owner.chat_id, owner.thread_id, path):
                 return
 
 

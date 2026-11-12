@@ -298,7 +298,7 @@ sessions in a dedicated forum group listed in `CCGRAM_GUEST_CHATS`.
   when it was sent and when it arrived.
 - In a guest group the status bubble has three buttons for everyone: Esc, screenshot and last
   reply. There is no Get File; the session delivers files by saving them to `outbox/` in its
-  folder, and CCGram posts each one to the topic (then moves it to `outbox/sent/`). Links are
+  folder, and CCGram posts each one to the topic (then moves it to `outbox/sent/`). Links are When several sessions share a folder, each file goes to the session whose transcript names it (else the most recently active one).
   refused. Buttons on screenshots (keys) stay the owner's.
 - Everything posted in a guest group is visible to every member, so the group only ever sees
   the sessions bound in it: `/sessions` there lists only those (and offers no New Session),
