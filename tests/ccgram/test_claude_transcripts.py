@@ -219,6 +219,34 @@ class TestCanonicalClaudeTranscript:
         assert "all good" in rendered[0].text
         assert "<local-command-stdout>" not in rendered[0].text
 
+    def test_local_command_stdout_drops_terminal_colour_codes(self) -> None:
+        # /model's output carries dim/normal SGR codes that Telegram would
+        # show as "[2m" / "[22m".
+        entries = self._entries(
+            {
+                "type": "user",
+                "uuid": "model-stdout",
+                "message": {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": (
+                                "<command-name>/model</command-name>"
+                                "<local-command-stdout>Set model to `Fable 5.1`"
+                                "\x1b[2m\x1b[22m\n\x1b[2m     pinned \x1b[22m`Opus 5.5`"
+                                "</local-command-stdout>"
+                            ),
+                        }
+                    ],
+                },
+            }
+        )
+        messages = build_messages(entries, "session", "claude")
+        text = messages[0].parts[0].text or ""
+        assert "\x1b" not in text and "[2m" not in text and "[22m" not in text
+        assert text.startswith("Set model to `Fable 5.1`")
+
     def test_local_command_stdout_uses_prior_invocation_across_batches(self) -> None:
         invocation = self._entries(
             {

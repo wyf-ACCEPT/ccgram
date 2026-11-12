@@ -584,7 +584,7 @@ def _claude_local_command(
                 {
                     "type": "notice",
                     "level": "info",
-                    "text": stdout.group(1).strip(),
+                    "text": _ANSI_SGR_RE.sub("", stdout.group(1)).strip(),
                     "source": "local_command",
                     "command": command_name,
                 },
