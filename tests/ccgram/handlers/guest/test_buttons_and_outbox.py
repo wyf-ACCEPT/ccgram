@@ -1,5 +1,6 @@
 """Guest chats: three shared buttons, no file browser, and the session outbox."""
 
+import json
 import os
 from collections.abc import Iterator
 from types import SimpleNamespace
@@ -175,7 +176,11 @@ def session(monkeypatch: pytest.MonkeyPatch, tmp_path):
         "iter_bound_topics",
         lambda: [(OWNER, GUEST_CHAT, THREAD, "hc-t9"), (OWNER, -100123, 5, "hc-t1")],
     )
-    monkeypatch.setattr(outbox, "view_window", lambda w: SimpleNamespace(cwd=str(cwd)))
+    monkeypatch.setattr(
+        outbox,
+        "view_window",
+        lambda w: SimpleNamespace(cwd=str(cwd), transcript_path=None),
+    )
     return cwd
 
 
@@ -190,6 +195,9 @@ async def test_flush_sends_and_moves_to_sent(session) -> None:
     assert kwargs["chat_id"] == GUEST_CHAT
     assert kwargs["message_thread_id"] == THREAD
     assert kwargs["filename"] == "plan.docx"
+    # A long upload timeout: a timed-out upload may still arrive.
+    assert kwargs["write_timeout"] == outbox.UPLOAD_TIMEOUT_S
+    assert kwargs["read_timeout"] == outbox.UPLOAD_TIMEOUT_S
     assert (session / "outbox" / "sent" / "plan.docx").exists()
     assert not (session / "outbox" / "plan.docx").exists()
 
@@ -214,3 +222,73 @@ async def test_no_guest_chats_means_no_work(
     client.send_document = AsyncMock()
     await outbox.flush_outboxes(client)
     client.send_document.assert_not_awaited()
+
+
+# --- several sessions sharing one folder --------------------------------------
+
+
+@pytest.fixture
+def shared(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    """Three sessions of one guest folder, each in its own topic."""
+    cwd = tmp_path / "guestdir"
+    (cwd / "outbox").mkdir(parents=True)
+    transcripts = {w: tmp_path / f"{w}.jsonl" for w in ("hc-t43", "hc-t46", "hc-t47")}
+    for i, path in enumerate(transcripts.values()):
+        _write(path, '{"type": "session_meta"}\n', age=300 - i * 100)
+    threads = {"hc-t43": 80, "hc-t46": 98, "hc-t47": 105}
+    monkeypatch.setattr(
+        outbox.session_query,
+        "iter_bound_topics",
+        lambda: [(OWNER, GUEST_CHAT, t, w) for w, t in threads.items()],
+    )
+    monkeypatch.setattr(
+        outbox,
+        "view_window",
+        lambda w: SimpleNamespace(cwd=str(cwd), transcript_path=transcripts[w]),
+    )
+    return SimpleNamespace(cwd=cwd, transcripts=transcripts, threads=threads)
+
+
+def _client() -> MagicMock:
+    client = MagicMock()
+    client.send_document = AsyncMock()
+    client.send_message = AsyncMock()
+    return client
+
+
+async def test_a_file_goes_to_the_session_that_wrote_it(shared) -> None:
+    # The Claude session hc-t47 wrote the file; hc-t43 comes first in the
+    # binding list and is the session the file used to go to.
+    with open(shared.transcripts["hc-t47"], "a") as f:
+        f.write('{"tool": "Write", "file_path": "outbox/风格A_深空鎏金.png"}\n')
+    old = os.path.getmtime(shared.transcripts["hc-t47"]) - 200
+    os.utime(shared.transcripts["hc-t47"], (old, old))
+    _write(shared.cwd / "outbox" / "风格A_深空鎏金.png")
+    client = _client()
+    await outbox.flush_outboxes(client)
+    assert client.send_document.await_args.kwargs["message_thread_id"] == 105
+
+
+async def test_an_escaped_name_in_the_transcript_counts(shared) -> None:
+    with open(shared.transcripts["hc-t46"], "a") as f:
+        f.write(json.dumps({"path": "outbox/风格B.png"}) + "\n")  # \\u-escaped
+    _write(shared.cwd / "outbox" / "风格B.png")
+    client = _client()
+    await outbox.flush_outboxes(client)
+    assert client.send_document.await_args.kwargs["message_thread_id"] == 98
+
+
+async def test_a_file_nobody_names_goes_to_the_most_recently_active(shared) -> None:
+    _write(shared.cwd / "outbox" / "notes.md")
+    client = _client()
+    await outbox.flush_outboxes(client)
+    # hc-t47's transcript was written last (age 100 s).
+    assert client.send_document.await_args.kwargs["message_thread_id"] == 105
+
+
+async def test_each_shared_file_is_sent_once(shared) -> None:
+    _write(shared.cwd / "outbox" / "a.md")
+    _write(shared.cwd / "outbox" / "b.md")
+    client = _client()
+    await outbox.flush_outboxes(client)
+    assert client.send_document.await_count == 2
