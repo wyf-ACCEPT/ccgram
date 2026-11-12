@@ -58,6 +58,8 @@ CB_MENU_CONTROL = "aq:pi:"  # aq:pi:<action>:<sequence>:<window>
 # Sessions dashboard
 # /model picker: mdl:<window_id>|<model id>
 CB_MODEL = "mdl:"
+# Claude's "Switch model?" question: mdc:<window_id>|yes|no
+CB_MODEL_CONFIRM = "mdc:"
 CB_SESSIONS_REFRESH = "sess:ref"
 CB_SESSIONS_NEW = "sess:new"
 CB_SESSIONS_KILL = "sess:kill:"  # sess:kill:<window_id>

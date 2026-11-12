@@ -9,7 +9,7 @@ import pytest
 
 from ccgram.config import config
 from ccgram.handlers import callback_registry, model_command
-from ccgram.handlers.callback_data import CB_MODEL
+from ccgram.handlers.callback_data import CB_MODEL, CB_MODEL_CONFIRM
 from ccgram.handlers.guest import access
 
 OWNER = 1644026884
@@ -134,6 +134,8 @@ def topic(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     )
     state.send = AsyncMock(return_value=(True, ""))
     monkeypatch.setattr(model_command, "send_telegram_to_window", state.send)
+    state.switch = AsyncMock(return_value="done")
+    monkeypatch.setattr(model_command, "_switch_claude", state.switch)
     state.reply = AsyncMock()
     monkeypatch.setattr(model_command, "safe_reply", state.reply)
     state.edit = AsyncMock()
@@ -176,9 +178,9 @@ async def test_owner_gets_buttons_with_the_current_model_ticked(topic) -> None:
     buttons = _buttons(topic.reply.await_args.kwargs["reply_markup"])
     assert buttons[0] == ("✓ Opus 5.5", f"{CB_MODEL}{WINDOW}|claude-opus-5-5")
     assert [label for label, _ in buttons[1:]] == [
+        "Fable 5.2",
         "Sonnet 5.5",
         "Haiku 5.5",
-        "Fable 5.1",
     ]
     topic.send.assert_not_awaited()
 
@@ -202,17 +204,21 @@ async def test_outside_a_topic_explains(topic) -> None:
     assert "inside a session's topic" in topic.reply.await_args.args[1]
 
 
-async def test_model_with_a_listed_id_switches_directly(topic) -> None:
+async def test_model_with_a_listed_id_switches_for_this_session(topic) -> None:
     update, context = _command(OWNER, GUEST_CHAT, "claude-sonnet-5-5")
     await model_command.model_command(update, context)
-    assert topic.send.await_args.args[3] == "/model claude-sonnet-5-5"
-    assert topic.reply.await_args.args[1].startswith("✓ Sent /model")
+    # Claude goes through its picker ("s"), never "/model <id>", which
+    # would also save the model as the default for new sessions.
+    assert topic.switch.await_args.args[-1] == "Sonnet 5.5"
+    topic.send.assert_not_awaited()
+    assert "this session only" in topic.reply.await_args.args[1]
 
 
 async def test_model_with_an_unlisted_id_is_refused(topic) -> None:
     update, context = _command(OWNER, GUEST_CHAT, "opus; rm -rf ~")
     await model_command.model_command(update, context)
     topic.send.assert_not_awaited()
+    topic.switch.assert_not_awaited()
     assert "Unknown model" in topic.reply.await_args.args[1]
 
 
@@ -273,12 +279,44 @@ def owns(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-async def test_pressing_a_model_types_it_into_the_session(topic, owns) -> None:
+async def test_pressing_a_claude_model_switches_this_session(topic, owns) -> None:
     update, query = _press(f"{CB_MODEL}{WINDOW}|claude-haiku-5-5")
     await model_command._model_callback(update, MagicMock())
-    assert topic.send.await_args.args[1] == WINDOW
-    assert topic.send.await_args.args[3] == "/model claude-haiku-5-5"
-    assert "Sent /model claude-haiku-5-5" in topic.edit.await_args.args[1]
+    assert topic.switch.await_args.args[2] == WINDOW
+    assert topic.switch.await_args.args[-1] == "Haiku 5.5"
+    assert "now uses Haiku 5.5 (this session only)" in topic.edit.await_args.args[1]
+
+
+async def test_pressing_a_codex_model_types_it(topic, owns, tmp_path: Path) -> None:
+    topic.provider = "codex"
+    topic.transcript = _codex_transcript(_codex_home(tmp_path / "g"), "gpt-6-astra")
+    update, query = _press(f"{CB_MODEL}{WINDOW}|gpt-6-luna")
+    await model_command._model_callback(update, MagicMock())
+    assert topic.send.await_args.args[3] == "/model gpt-6-luna"
+    topic.switch.assert_not_awaited()
+
+
+async def test_claudes_cache_question_comes_as_buttons(topic, owns) -> None:
+    topic.switch.return_value = "confirm"
+    update, query = _press(f"{CB_MODEL}{WINDOW}|claude-fable-5-2")
+    await model_command._model_callback(update, MagicMock())
+    text = topic.edit.await_args.args[1]
+    assert "re-read the whole conversation" in text
+    markup = topic.edit.await_args.kwargs["reply_markup"]
+    assert [b.callback_data for row in markup.inline_keyboard for b in row] == [
+        f"{CB_MODEL_CONFIRM}{WINDOW}|yes",
+        f"{CB_MODEL_CONFIRM}{WINDOW}|no",
+    ]
+
+
+async def test_a_failed_switch_is_reported(topic, owns) -> None:
+    topic.switch.return_value = "the model menu did not open"
+    update, query = _press(f"{CB_MODEL}{WINDOW}|claude-fable-5-2")
+    await model_command._model_callback(update, MagicMock())
+    assert (
+        "Could not switch xy-task: the model menu did not open"
+        in (topic.edit.await_args.args[1])
+    )
 
 
 async def test_a_forged_model_never_reaches_the_terminal(topic, owns) -> None:
@@ -330,3 +368,223 @@ async def test_a_guest_may_not_switch_the_owners_other_sessions(seen) -> None:
     await callback_registry.dispatch(update, MagicMock())
     assert seen == []
     query.answer.assert_awaited_once_with("Only the owner can use these buttons.")
+
+
+async def test_a_guest_may_answer_the_cache_question_for_their_session(seen) -> None:
+    access.allow(OWNER, GUEST, GUEST_CHAT, "XY")
+    update, _query = _press(f"{CB_MODEL_CONFIRM}{WINDOW}|yes", user_id=GUEST)
+    await callback_registry.dispatch(update, MagicMock())
+    assert seen == [OWNER]
+
+
+# --- driving Claude's picker -----------------------------------------------------------
+
+PICKER = """\
+ Select model
+ Switch between Claude models. Your pick becomes the default for new sessions.
+
+   1. Default (recommended)  Fable 5.1
+ \u276f 2. Opus 5.5 \u2714            For complex work and everyday tasks
+   3. Fable 5.2              For your toughest challenges
+   4. Sonnet 5.5             Most efficient for simpler tasks
+   5. Haiku 5.5              Fastest for quick answers
+   6. Fable 5.1              Most capable for your hardest tasks
+ \u2193 7. Haiku 4.5              Fastest for quick answers
+
+ Enter to set as default \u00b7 s to use this session only \u00b7 Esc to cancel
+"""
+
+CONFIRM = """\
+ Switch model?
+ Your next response will be slower and use more tokens
+
+ \u276f 1. Yes, switch to Fable 5.1
+   2. No, go back
+"""
+
+
+def test_picker_rows_reads_numbers_labels_and_cursor() -> None:
+    rows, cursor = model_command.picker_rows("1. an earlier list item\n" + PICKER)
+    assert rows[1] == "Default (recommended)"
+    assert rows[2] == "Opus 5.5"
+    assert rows[4] == "Sonnet 5.5"
+    assert rows[7] == "Haiku 4.5"
+    assert cursor == 2
+
+
+def test_no_picker_no_rows() -> None:
+    assert model_command.picker_rows("1. a list\n\u276f 2. not a picker") == ({}, None)
+
+
+def test_confirm_open() -> None:
+    assert model_command.confirm_open(CONFIRM)
+    assert not model_command.confirm_open(PICKER)
+
+
+class FakeTerminal:
+    """Screens the picker shows as keys arrive, and the keys sent."""
+
+    def __init__(
+        self, after_s: str = "  \u23bf  Set model to Fable 5.1 for this session only"
+    ) -> None:
+        self.cursor = 2
+        self.picker_open = False
+        self.after_s = after_s
+        self.keys: list[str] = []
+        self.texts: list[str] = []
+
+    def screen(self) -> str:
+        if not self.picker_open:
+            return self.after_s
+        lines = []
+        for line in PICKER.splitlines():
+            line = line.replace("\u276f", " ")
+            if line.strip().startswith(f"{self.cursor}."):
+                line = " \u276f" + line[2:]
+            lines.append(line)
+        return "\n".join(lines)
+
+    async def send_text(self, *args, **kwargs):
+        self.texts.append(args[3])
+        self.picker_open = True
+        return True, ""
+
+    async def send_keys(self, _window_id, keys):
+        for key in keys:
+            self.keys.append(key)
+            if key == "Down":
+                self.cursor += 1
+            elif key == "Up":
+                self.cursor -= 1
+            elif key in {"s", "Escape"}:
+                self.picker_open = False
+        return True, ""
+
+
+@pytest.fixture
+def terminal(monkeypatch: pytest.MonkeyPatch) -> FakeTerminal:
+    term = FakeTerminal()
+    monkeypatch.setattr(model_command, "send_telegram_to_window", term.send_text)
+
+    async def screen(_window_id: str) -> str:
+        return term.screen()
+
+    monkeypatch.setattr(model_command, "_screen", screen)
+    monkeypatch.setattr(model_command, "_POLL_S", 0)
+    return term
+
+
+async def test_switch_moves_to_the_model_and_applies_it_for_this_session(
+    terminal,
+) -> None:
+    outcome = await model_command._switch_claude(
+        terminal, OWNER, WINDOW, 7, GUEST_CHAT, "Fable 5.1"
+    )
+    assert outcome == "done"
+    assert terminal.texts == ["/model"]
+    assert terminal.keys == ["Down", "Down", "Down", "Down", "s"]
+
+
+async def test_switch_moves_up_too(terminal) -> None:
+    terminal.cursor = 5
+    await model_command._switch_claude(
+        terminal, OWNER, WINDOW, 7, GUEST_CHAT, "Opus 5.5"
+    )
+    assert terminal.keys == ["Up", "Up", "Up", "s"]
+
+
+async def test_a_model_not_in_the_menu_closes_it(terminal) -> None:
+    outcome = await model_command._switch_claude(
+        terminal, OWNER, WINDOW, 7, GUEST_CHAT, "Opus 9"
+    )
+    assert outcome == "Opus 9 is not in the model menu"
+    assert terminal.keys == ["Escape"]
+
+
+async def test_the_cache_question_is_reported(terminal) -> None:
+    terminal.after_s = CONFIRM
+    outcome = await model_command._switch_claude(
+        terminal, OWNER, WINDOW, 7, GUEST_CHAT, "Fable 5.1"
+    )
+    assert outcome == "confirm"
+
+
+async def test_a_menu_that_never_opens_is_reported(
+    terminal, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def never_opens(*_a, **_k):
+        return True, ""
+
+    monkeypatch.setattr(model_command, "send_telegram_to_window", never_opens)
+    clock = iter(range(0, 100, 5))
+    monkeypatch.setattr(model_command.time, "monotonic", lambda: next(clock))
+    outcome = await model_command._switch_claude(
+        terminal, OWNER, WINDOW, 7, GUEST_CHAT, "Fable 5.1"
+    )
+    assert outcome == "the model menu did not open"
+    assert terminal.keys == []
+
+
+# --- answering the cache question --------------------------------------------------
+
+
+@pytest.fixture
+def question(monkeypatch: pytest.MonkeyPatch, topic, owns):
+    state = SimpleNamespace(screen=CONFIRM, keys=[])
+
+    async def screen(_window_id: str) -> str:
+        return state.screen
+
+    async def keys(_adapter, _window_id, sent):
+        state.keys += sent
+        return True
+
+    monkeypatch.setattr(model_command, "_screen", screen)
+    monkeypatch.setattr(model_command, "_keys", keys)
+    return state
+
+
+async def test_yes_confirms_the_switch(question, topic) -> None:
+    update, _query = _press(f"{CB_MODEL_CONFIRM}{WINDOW}|yes")
+    await model_command._confirm_callback(update, MagicMock())
+    assert question.keys == ["Enter"]
+    assert "switched (this session only)" in topic.edit.await_args.args[1]
+
+
+async def test_no_goes_back(question, topic) -> None:
+    update, _query = _press(f"{CB_MODEL_CONFIRM}{WINDOW}|no")
+    await model_command._confirm_callback(update, MagicMock())
+    assert question.keys == ["Escape"]
+
+
+async def test_a_question_already_answered_sends_nothing(question) -> None:
+    question.screen = "  \u23bf  Set model to Fable 5.1 for this session only"
+    update, query = _press(f"{CB_MODEL_CONFIRM}{WINDOW}|yes")
+    await model_command._confirm_callback(update, MagicMock())
+    assert question.keys == []
+    query.answer.assert_awaited_once_with(
+        "That question is no longer open", show_alert=True
+    )
+
+
+def test_claude_models_can_be_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        config,
+        "claude_models",
+        [("claude-opus-6", "Opus 6"), ("claude-fable-5-2", "Fable 5.2")],
+    )
+    assert model_command.model_choices("claude", None) == [
+        ("claude-opus-6", "Opus 6"),
+        ("claude-fable-5-2", "Fable 5.2"),
+    ]
+
+
+async def test_fable_5_2_is_offered_and_found_in_the_menu(terminal) -> None:
+    assert ("claude-fable-5-2", "Fable 5.2") in model_command.model_choices(
+        "claude", None
+    )
+    outcome = await model_command._switch_claude(
+        terminal, OWNER, WINDOW, 7, GUEST_CHAT, "Fable 5.2"
+    )
+    assert outcome == "done"
+    assert terminal.keys == ["Down", "s"]

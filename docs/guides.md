@@ -241,6 +241,7 @@ All settings accept both CLI flags and environment variables. CLI flags take pre
 | `CCGRAM_GUEST_LAUNCH_COMMAND`                        | _(empty)_                      | Command `/sessions new` runs in a guest chat's workspace; `{label}` becomes the chat's label         |
 | `CCGRAM_GUEST_CODEX_LAUNCH_COMMAND`                  | _(empty)_                      | The same for a guest's Codex session (➕ Codex, `/sessions new codex`)                                |
 | `CCGRAM_GUEST_MAX_SESSIONS`                          | `3`                            | Most sessions one guest chat may have at once, Claude and Codex together (live or still starting)    |
+| `CCGRAM_CLAUDE_MODELS`                               | _(built-in list)_              | `/model` buttons for Claude: `id=Label,…`, labels as Claude Code's picker shows them                 |
 | `CCGRAM_CODEX_SESSION_DIRS`                          | _(empty)_                      | Further Codex session folders (comma-separated, globs allowed) for runs with their own `CODEX_HOME`  |
 | `CCGRAM_HIDE_TOOL_CALLS` / `--hide-tool-calls`        | `false`                        | Set `true` to globally hide `tool_use`/`tool_result` messages (per-window override via `/toolcalls`) |
 | `CCGRAM_HIDE_THINKING` / `--hide-thinking`            | `false`                        | Set `true` to globally hide thinking messages                                                        |
@@ -826,7 +827,7 @@ The buttons shown adapt to each provider's capabilities. Claude and Antigravity 
 
 ## Switching Models (`/model`)
 
-`/model` in a session's topic lists the models that session can switch to, with the current one ticked: Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 for Claude, and the listed models in the session's own `models_cache.json` for Codex (a guest Codex reads its own `CODEX_HOME`). A tap types `/model <id>` into the session, which both agents apply directly without opening their pickers; `/model <id>` does the same for a listed id. Only ids from the list are ever typed. Guests may use it for the sessions in their group (acting as the owner, like `/sessions`). For other agents the owner's `/model` is forwarded unchanged, as before.
+`/model` in a session's topic lists the models that session can switch to, with the current one ticked: Opus 5.5, Fable 5.2, Sonnet 5.5 and Haiku 5.5 for Claude (`CCGRAM_CLAUDE_MODELS` replaces the list), and the listed models in the session's own `models_cache.json` for Codex (a guest Codex reads its own `CODEX_HOME`). A tap switches the session for this session only, never the default for new sessions: Codex gets `/model <id>`; for Claude (whose `/model <id>` would also save the model to the user's settings) CCGram opens its picker, moves the cursor to the model, checks it landed there and presses `s` ("use this session only"), closing the picker with Esc if anything looks wrong. When Claude asks whether to re-read a cached conversation, the question comes to Telegram as **Switch anyway** / **Keep the current model**. `/model <id>` does the same for a listed id. Only ids from the list are ever typed. Guests may use it for the sessions in their group (acting as the owner, like `/sessions`). For other agents the owner's `/model` is forwarded unchanged, as before.
 
 ## Manual Provider Override (`/agent`)
 
