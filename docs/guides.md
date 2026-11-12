@@ -824,6 +824,10 @@ When an agent session exits or crashes, the bot detects the dead window and offe
 
 The buttons shown adapt to each provider's capabilities. Claude and Antigravity support Fresh, Continue, and the CCGram Resume picker. Codex, Gemini, and Pi support Fresh and Continue; their CLIs can resume known session IDs, but CCGram does not yet enumerate those providers' sessions. Shell supports Fresh only because shell sessions are ephemeral.
 
+## Switching Models (`/model`)
+
+`/model` in a session's topic lists the models that session can switch to, with the current one ticked: Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 for Claude, and the listed models in the session's own `models_cache.json` for Codex (a guest Codex reads its own `CODEX_HOME`). A tap types `/model <id>` into the session, which both agents apply directly without opening their pickers; `/model <id>` does the same for a listed id. Only ids from the list are ever typed. Guests may use it for the sessions in their group (acting as the owner, like `/sessions`). For other agents the owner's `/model` is forwarded unchanged, as before.
+
 ## Manual Provider Override (`/agent`)
 
 `/agent` (alias `/provider`) shows the topic name, provider, and Auto/Manual mode. A manual choice is accepted only when the recognized live foreground process matches that provider; unknown or mismatched processes leave routing unchanged. `/agent` does not start, stop, or redirect a process in the terminal.
