@@ -364,6 +364,16 @@ class Config:
             for entry in os.getenv("CCGRAM_CODEX_SESSION_DIRS", "").split(",")
             if entry.strip()
         ]
+        # /model buttons for Claude sessions: "id=Label,..." with the label as
+        # Claude Code's picker shows it. Empty: the built-in list.
+        self.claude_models = [
+            (model_id.strip(), label.strip())
+            for model_id, _, label in (
+                entry.partition("=")
+                for entry in os.getenv("CCGRAM_CLAUDE_MODELS", "").split(",")
+            )
+            if model_id.strip() and label.strip()
+        ]
         # Most sessions a guest chat may have at once (live or still starting).
         self.guest_max_sessions = _positive_int(
             os.getenv("CCGRAM_GUEST_MAX_SESSIONS", ""), default=3

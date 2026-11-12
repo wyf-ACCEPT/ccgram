@@ -178,6 +178,7 @@ async def test_owner_gets_buttons_with_the_current_model_ticked(topic) -> None:
     buttons = _buttons(topic.reply.await_args.kwargs["reply_markup"])
     assert buttons[0] == ("✓ Opus 5.5", f"{CB_MODEL}{WINDOW}|claude-opus-5-5")
     assert [label for label, _ in buttons[1:]] == [
+        "Fable 5.2",
         "Sonnet 5.5",
         "Haiku 5.5",
         "Fable 5.1",
@@ -565,3 +566,26 @@ async def test_a_question_already_answered_sends_nothing(question) -> None:
     query.answer.assert_awaited_once_with(
         "That question is no longer open", show_alert=True
     )
+
+
+def test_claude_models_can_be_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        config,
+        "claude_models",
+        [("claude-opus-6", "Opus 6"), ("claude-fable-5-2", "Fable 5.2")],
+    )
+    assert model_command.model_choices("claude", None) == [
+        ("claude-opus-6", "Opus 6"),
+        ("claude-fable-5-2", "Fable 5.2"),
+    ]
+
+
+async def test_fable_5_2_is_offered_and_found_in_the_menu(terminal) -> None:
+    assert ("claude-fable-5-2", "Fable 5.2") in model_command.model_choices(
+        "claude", None
+    )
+    outcome = await model_command._switch_claude(
+        terminal, OWNER, WINDOW, 7, GUEST_CHAT, "Fable 5.2"
+    )
+    assert outcome == "done"
+    assert terminal.keys == ["Down", "s"]

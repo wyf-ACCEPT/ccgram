@@ -52,12 +52,23 @@ if TYPE_CHECKING:
 
 logger = structlog.get_logger()
 
+# (model id, label in Claude Code's /model picker), in the picker's order.
+# The label is what the switch looks for on screen; the id ticks the current
+# model. CCGRAM_CLAUDE_MODELS replaces the list ("id=Label,id=Label").
 CLAUDE_MODELS: tuple[tuple[str, str], ...] = (
     ("claude-opus-5-5", "Opus 5.5"),
+    ("claude-fable-5-2", "Fable 5.2"),
     ("claude-sonnet-5-5", "Sonnet 5.5"),
     ("claude-haiku-5-5", "Haiku 5.5"),
     ("claude-fable-5-1", "Fable 5.1"),
 )
+
+
+def claude_models() -> list[tuple[str, str]]:
+    """The Claude models offered: CCGRAM_CLAUDE_MODELS, else the defaults."""
+    return config.claude_models or list(CLAUDE_MODELS)
+
+
 _BUTTONS_PER_ROW = 2
 # The current model is near the end of the transcript; never read it all.
 _TAIL_BYTES = 512 * 1024
@@ -95,7 +106,7 @@ def codex_models(transcript_path: Path | None) -> list[tuple[str, str]]:
 def model_choices(provider: str, transcript_path: Path | None) -> list[tuple[str, str]]:
     """``(id, label)`` pairs the session can switch to; [] when unsupported."""
     if provider == "claude":
-        return list(CLAUDE_MODELS)
+        return claude_models()
     if provider == "codex":
         return codex_models(transcript_path)
     return []
@@ -318,7 +329,7 @@ async def _send_model(
     adapter = adapter_for(context.bot_data)
     provider = get_window_provider(window_id) or ""
     if provider == "claude":
-        label = dict(CLAUDE_MODELS).get(model_id, model_id)
+        label = dict(claude_models()).get(model_id, model_id)
         outcome = await _switch_claude(
             adapter, acting_id, window_id, thread_id, chat_id, label
         )
