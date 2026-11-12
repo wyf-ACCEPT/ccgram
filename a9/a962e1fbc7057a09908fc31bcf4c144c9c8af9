@@ -1,0 +1,51 @@
+src/ccgram/handlers/guest/sessions.py
+  s_1dcf832b515331::t_22b2cb6ae05549 1-2,9-19,22-28,30-32,36-37,41-82,93-94,96-112,122,124-125,127-129,131-138
+  s_1dcf832b515331::t_c93db7143e8c36 3-8,20-21,33-35,38-40,83-92,95,113-121,123,126,130
+  s_1dcf832b515331::t_2da16badf53871 29
+src/ccgram/session_protocol/backend.py
+  s_1dcf832b515331::t_4cf11142650920 124-127,573-586
+tests/ccgram/session_protocol/test_backend_regressions.py
+  s_1dcf832b515331::t_179bb15dcf62be 991-1012,1014-1020
+  s_1dcf832b515331::t_02931d4090491d 1013
+src/ccgram/session_protocol/telegram.py
+  s_1dcf832b515331::t_4cf11142650920 228,230-232
+src/ccgram/handlers/callback_registry.py
+  s_1dcf832b515331::t_3e81f9a8f126ff 23-31,35-46,106-107,110-113,121
+src/ccgram/handlers/guest/scope.py
+  s_1dcf832b515331::t_b439189159f7da 66
+tests/ccgram/handlers/guest/test_guest_sessions.py
+  s_1dcf832b515331::t_52e94d74d025b4 1-40,42-43,45,47-67,69-76,78-79,81,84-87,89-95,97-107,109,111-121,123-131,136-139,144-148,153-163,166-169,171-172,174-268
+  s_1dcf832b515331::t_4559977dc81764 132,135,149-150,152
+  s_1dcf832b515331::t_f86ef106d75845 164-165
+  s_1dcf832b515331::t_2da16badf53871 41,44,46,68,77,80,82-83,88,96,108,110,122,151,170,173
+  s_1dcf832b515331::t_02931d4090491d 133-134,140-143
+src/ccgram/config.py
+  s_1dcf832b515331::t_0c224c108f4fa2 89-97,352-358
+src/ccgram/handlers/sessions_dashboard.py
+  s_1dcf832b515331::t_b02c3950fb9e21 46,50,52,80-81,85-86,96-99,101,158-161,166-171,176-178,180-188,191,195,333
+  s_1dcf832b515331::t_4559977dc81764 90-92
+  s_1dcf832b515331::t_e413a75f358080 189-190,192,205-207,214,345
+  s_1dcf832b515331::t_f86ef106d75845 208-213,215-218
+  s_1dcf832b515331::t_f1c788504936a5 334
+  s_1dcf832b515331::t_5617d92294c750 336,342,348,353,361,364
+.claude/rules/architecture.md
+  s_1dcf832b515331::t_4559977dc81764 195
+docs/guides.md
+  s_1dcf832b515331::t_4559977dc81764 241-242,304-310
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a9a962e1fbc7057a09908fc31bcf4c144c9c8af9",
+  "prompts": {},
+  "sessions": {
+    "s_1dcf832b515331": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ad57b95f-05b2-44b6-a5c5-4304a027e8a3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
