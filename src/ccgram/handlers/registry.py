@@ -30,6 +30,7 @@ from .interactive.pi_controls import is_menu_reply
 from .callback_registry import dispatch as _dispatch_callback
 from .callback_registry import load_handlers as _load_callback_handlers
 from .agent_command import agent_command
+from .model_command import model_command
 from .cleanup import rollback_command, unbind_command
 from .command_history import recall_command
 from .dashboard_command import dashboard_command, private_start_greeting
@@ -132,6 +133,7 @@ def register_all(
         CommandSpec("restore", restore_command),
         CommandSpec("last", last_command),
         CommandSpec("agent", agent_command),
+        CommandSpec("model", model_command),
         CommandSpec("provider", agent_command),  # alias
         CommandSpec("guest", guest_command),
     ]
@@ -243,6 +245,7 @@ COMMAND_NAMES: tuple[str, ...] = (
     "restore",
     "last",
     "agent",
+    "model",
     "provider",
     "guest",
 )

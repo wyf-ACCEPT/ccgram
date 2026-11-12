@@ -21,6 +21,7 @@ from telegram import CallbackQuery, Update
 from ..config import config
 from ..thread_router import thread_router
 from .callback_data import (
+    CB_MODEL,
     CB_SESSIONS_KILL,
     CB_SESSIONS_KILL_CONFIRM,
     CB_SESSIONS_NEW,
@@ -36,6 +37,7 @@ from .guest import access as guest_access
 # be bound in the guest chat: Esc, screenshot, last reply, and ending it from
 # /sessions (to free a slot under the chat's session limit).
 GUEST_BUTTON_PREFIXES = (
+    CB_MODEL,
     CB_STATUS_ESC,
     CB_STATUS_SCREENSHOT,
     CB_STATUS_LAST_REPLY,
@@ -203,6 +205,7 @@ def load_handlers() -> None:
         agent_command,
         command_history,
         hook_events,
+        model_command,
         sessions_dashboard,
         sync_command,
     )
