@@ -113,6 +113,9 @@ _TITLE_SEPARATOR = " | "
 _SPINNER_RE = re.compile(r"^[\u2800-\u28ff]\s+")
 # A failed tab rename is not retried for the same name sooner than this.
 _TAB_RENAME_RETRY_S = 60.0
+# The app updates the ``where`` label about a second after a rename; a done
+# rename is not repeated while the label catches up.
+_TAB_RENAME_SETTLE_S = 10.0
 
 _HC_CAPABILITIES = MultiplexerCapabilities(
     name="hc",
@@ -523,6 +526,7 @@ class HcManager:
         # pairs wait _TAB_RENAME_RETRY_S before the next attempt.
         self._tab_sync_task: asyncio.Task[None] | None = None
         self._tab_rename_failures: dict[tuple[str, str], float] = {}
+        self._tab_renamed: dict[tuple[str, str], float] = {}
         # Per-address history-read backoff deadlines and in-flight reads.
         self._history_backoff: dict[str, float] = {}
         self._history_inflight: set[str] = set()
@@ -868,20 +872,29 @@ class HcManager:
             for key, at in self._tab_rename_failures.items()
             if now - at < _TAB_RENAME_RETRY_S
         }
+        self._tab_renamed = {
+            key: at
+            for key, at in self._tab_renamed.items()
+            if now - at < _TAB_RENAME_SETTLE_S
+        }
         renames: list[tuple[str, str]] = []
         for tab_id, found in names.items():
             if len(found) != 1:
                 continue
             (name,) = found
-            if name != current[tab_id] and (tab_id, name) not in (
-                self._tab_rename_failures
+            key = (tab_id, name)
+            if (
+                name != current[tab_id]
+                and key not in self._tab_rename_failures
+                and key not in self._tab_renamed
             ):
-                renames.append((tab_id, name))
+                renames.append(key)
         return renames
 
     async def _rename_tabs(self, renames: Sequence[tuple[str, str]]) -> None:
         for tab_id, name in renames:
             if await self._rename_tab(tab_id, name):
+                self._tab_renamed[(tab_id, name)] = time.monotonic()
                 logger.info(
                     "Renamed Herdr tab to the session name", tab=tab_id, name=name
                 )
