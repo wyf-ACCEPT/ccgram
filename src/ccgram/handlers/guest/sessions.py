@@ -8,6 +8,11 @@ settings and never with the owner's. Discovery then adopts
 the window and creates its topic in this chat, as for any session started on
 the computer.
 
+Each session starts named ``<label>-N`` (``session_numbers``): Claude through
+a ``{name}`` placeholder in its launch command (``--name {name}``), Codex (and
+Claude when the template has no placeholder) by typing ``/rename <name>`` once
+its input box is on screen. Herdr tabs and topics then follow that name.
+
 A chat holds at most ``CCGRAM_GUEST_MAX_SESSIONS`` sessions of either kind. Sessions still
 starting (created, not yet adopted) count too, and starts in one chat are
 serialised, so quick repeated taps cannot exceed the limit.
@@ -30,6 +35,7 @@ from ...multiplexer.reconciliation import list_windows_for_reconciliation
 from ...session_protocol.models import ProtocolError
 from ..topics.topic_routes import routed_workspace
 from .scope import windows_in_chat
+from .session_numbers import next_session_name
 
 if TYPE_CHECKING:
     from ...session_protocol.telegram import TelegramSessionAdapter
@@ -52,9 +58,20 @@ LIMIT = (
     "End one first: /sessions, then 🗑."
 )
 STARTED = (
-    "Starting a new {provider} session ({count} of {max}). "
+    "Starting a new {provider} session, {name} ({count} of {max}). "
     "It appears here as a new topic in a few seconds."
 )
+
+# Typing ``/rename``: wait this long for the agent's input box, then try the
+# send a few times (the session core may not accept input in the first
+# seconds, before discovery has seen the new terminal).
+READY_TIMEOUT_S = 60.0
+RENAME_ATTEMPTS = 10
+RENAME_RETRY_S = 3.0
+_POLL_S = 1.0
+# First character of the agent's input row when it waits for input.
+_INPUT_GLYPHS = {"claude": "❯", "codex": "›"}
+_naming_tasks: set[asyncio.Task[None]] = set()
 
 _pending: dict[int, dict[str, float]] = {}
 _locks: dict[int, asyncio.Lock] = {}
@@ -137,7 +154,14 @@ async def start_guest_session(
         if workspace is None or not workspace.cwd:
             logger.warning("Guest chat has no routed workspace", chat_id=chat_id)
             return NO_WORKSPACE
-        command = template.replace("{label}", shlex.quote(label))
+        windows = await list_windows_for_reconciliation(multiplexer) or []
+        name = next_session_name(
+            label, (getattr(w, "window_name", "") for w in windows)
+        )
+        typed_name = "{name}" not in template
+        command = template.replace("{label}", shlex.quote(label)).replace(
+            "{name}", shlex.quote(name)
+        )
         data = {
             "provider": provider,
             "directory": workspace.cwd,
@@ -158,8 +182,51 @@ async def start_guest_session(
             provider=provider,
             window_id=created.target_id,
             workspace=workspace.label,
+            name=name,
         )
-        return STARTED.format(provider=_title(provider), count=count + 1, max=limit)
+        if typed_name:
+            task = asyncio.create_task(
+                _type_rename(adapter, provider, created.target_id, name)
+            )
+            _naming_tasks.add(task)
+            task.add_done_callback(_naming_tasks.discard)
+        return STARTED.format(
+            provider=_title(provider), name=name, count=count + 1, max=limit
+        )
+
+
+def _input_ready(provider: str, screen: str) -> bool:
+    glyph = _INPUT_GLYPHS.get(provider)
+    return bool(glyph) and any(
+        line.lstrip().startswith(f"{glyph} ") for line in screen.splitlines()
+    )
+
+
+async def _type_rename(
+    adapter: TelegramSessionAdapter, provider: str, window_id: str, name: str
+) -> None:
+    """Name a just-started session by typing ``/rename <name>`` into it."""
+    deadline = _clock() + READY_TIMEOUT_S
+    while not _input_ready(provider, await multiplexer.capture_pane(window_id) or ""):
+        if _clock() >= deadline:
+            logger.warning(
+                "Guest session rename skipped: no input box",
+                window_id=window_id,
+                name=name,
+            )
+            return
+        await asyncio.sleep(_POLL_S)
+    error = ""
+    for attempt in range(RENAME_ATTEMPTS):
+        if attempt:
+            await asyncio.sleep(RENAME_RETRY_S)
+        ok, error = await adapter.send_text(window_id, f"/rename {name}")
+        if ok:
+            logger.info("Guest session named", window_id=window_id, name=name)
+            return
+    logger.warning(
+        "Guest session rename failed", window_id=window_id, name=name, error=error
+    )
 
 
 def _title(provider: str) -> str:
@@ -168,4 +235,7 @@ def _title(provider: str) -> str:
 
 def _reset_guest_sessions_for_testing() -> None:
     _pending.clear()
+    for task in _naming_tasks:
+        task.cancel()
+    _naming_tasks.clear()
     _locks.clear()
