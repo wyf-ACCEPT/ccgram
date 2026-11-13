@@ -250,14 +250,14 @@ def codex_title_name(title: str, cwd: str) -> str:
     must be the folder or one of its parents (the project name is the git root
     or the folder), so a customised title is never misread as a name.
     """
-    parts = [part.strip() for part in title.split(_TITLE_SEPARATOR)]
-    if len(parts) < 2 or not cwd:
+    *names_part, project = [part.strip() for part in title.split(_TITLE_SEPARATOR)]
+    if not names_part or not cwd:
         return ""
     folder = Path(cwd)
     names = {path.name for path in (folder, *folder.parents) if path.name}
-    if parts[-1] not in names:
+    if project not in names:
         return ""
-    return _SPINNER_RE.sub("", parts[-2]).strip()
+    return _SPINNER_RE.sub("", names_part[-1]).strip()
 
 
 # ── Key translation ────────────────────────────────────────────────────

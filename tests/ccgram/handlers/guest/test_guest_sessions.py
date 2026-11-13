@@ -1,5 +1,6 @@
 """Guests starting sessions with /sessions new, at most N per guest chat."""
 
+import asyncio
 from collections.abc import Iterator
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
@@ -26,6 +27,7 @@ LAUNCH = "/admin/start-friend.sh {label}"
 CODEX_LAUNCH = "/admin/start-friend-codex.sh {label}"
 # Captured before the fixture replaces it.
 _REAL_SEED_TRUST = guest_sessions._seed_trust
+_REAL_TYPE_RENAME = guest_sessions._type_rename
 WORKSPACE = WorkspaceRef(workspace_id="sp-xy", label="XY", cwd="/friends/XY")
 
 
@@ -37,9 +39,13 @@ class World:
         self.live: set[str] = {"hc-t5"}
         self.created: list[dict] = []
         self.next_id = 40
+        self.names: dict[str, str] = {"hc-t5": "chore"}
 
     async def listing(self, _mux=None):
-        return [SimpleNamespace(window_id=w) for w in sorted(self.live)]
+        return [
+            SimpleNamespace(window_id=w, window_name=self.names.get(w, ""))
+            for w in sorted(self.live)
+        ]
 
     async def create(self, data, **kwargs):
         window_id = f"hc-t{self.next_id}"
@@ -70,6 +76,7 @@ def world(monkeypatch: pytest.MonkeyPatch, tmp_path) -> Iterator[World]:
         guest_sessions, "routed_workspace", AsyncMock(return_value=WORKSPACE)
     )
     monkeypatch.setattr(guest_sessions, "_seed_trust", AsyncMock())
+    monkeypatch.setattr(guest_sessions, "_type_rename", AsyncMock())
     access._reset_guest_access_for_testing()
     guest_sessions._reset_guest_sessions_for_testing()
     yield w
@@ -79,7 +86,9 @@ def world(monkeypatch: pytest.MonkeyPatch, tmp_path) -> Iterator[World]:
 
 async def test_start_runs_the_guest_launcher_in_the_chats_workspace(world) -> None:
     reply = await guest_sessions.start_guest_session(GUEST_CHAT, world)
-    assert reply == guest_sessions.STARTED.format(provider="Claude", count=1, max=3)
+    assert reply == guest_sessions.STARTED.format(
+        provider="Claude", name="xy-1", count=1, max=3
+    )
     (call,) = world.created
     assert call["directory"] == "/friends/XY"
     assert call["launch_command"] == "/admin/start-friend.sh XY"
@@ -143,7 +152,9 @@ async def test_disabled_without_a_launch_command(
 
 async def test_codex_runs_the_codex_launcher(world) -> None:
     reply = await guest_sessions.start_guest_session(GUEST_CHAT, world, "codex")
-    assert reply == guest_sessions.STARTED.format(provider="Codex", count=1, max=3)
+    assert reply == guest_sessions.STARTED.format(
+        provider="Codex", name="xy-1", count=1, max=3
+    )
     (call,) = world.created
     assert call["provider"] == "codex"
     assert call["launch_command"] == "/admin/start-friend-codex.sh XY"
@@ -384,3 +395,83 @@ async def test_codex_button_starts_codex(
     monkeypatch.setattr(sessions_dashboard, "safe_edit", AsyncMock())
     await sessions_dashboard.handle_sessions_new(query, OWNER, world, "codex")
     assert [c["provider"] for c in world.created] == ["codex"]
+
+
+# ── Session names ───────────────────────────────────────────────────────
+
+
+async def test_claude_gets_its_name_on_the_command_line(
+    world, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        config, "guest_launch_command", "/admin/start-friend.sh {label} --name {name}"
+    )
+    world.names["hc-t30"] = "xy-3"
+    world.live.add("hc-t30")
+    await guest_sessions.start_guest_session(GUEST_CHAT, MagicMock(create=world.create))
+    assert world.created[0]["launch_command"] == (
+        "/admin/start-friend.sh XY --name xy-4"
+    )
+    typed = guest_sessions._type_rename
+    assert isinstance(typed, AsyncMock)
+    typed.assert_not_awaited()
+
+
+async def test_codex_is_named_by_typing_rename(world) -> None:
+    adapter = MagicMock(create=world.create)
+    await guest_sessions.start_guest_session(GUEST_CHAT, adapter, "codex")
+    await asyncio.sleep(0)
+    typed = guest_sessions._type_rename
+    assert isinstance(typed, AsyncMock)
+    typed.assert_awaited_once_with(adapter, "codex", "hc-t40", "xy-1")
+
+
+async def test_both_agents_share_the_numbers(world, monkeypatch) -> None:
+    monkeypatch.setattr(
+        config, "guest_launch_command", "/admin/start-friend.sh {label} --name {name}"
+    )
+    adapter = MagicMock(create=world.create)
+    first = await guest_sessions.start_guest_session(GUEST_CHAT, adapter, "claude")
+    second = await guest_sessions.start_guest_session(GUEST_CHAT, adapter, "codex")
+    assert "xy-1" in first and "xy-2" in second
+
+
+class Screen:
+    def __init__(self, *screens: str) -> None:
+        self.screens = list(screens)
+
+    async def capture_pane(self, _window_id: str) -> str:
+        return self.screens.pop(0) if len(self.screens) > 1 else self.screens[0]
+
+
+@pytest.fixture
+def fast(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(guest_sessions, "_POLL_S", 0)
+    monkeypatch.setattr(guest_sessions, "RENAME_RETRY_S", 0)
+
+
+async def test_rename_is_typed_once_the_input_box_shows(
+    monkeypatch: pytest.MonkeyPatch, fast
+) -> None:
+    screen = Screen("Starting…", "\n› Ask Codex to do anything\n")
+    monkeypatch.setattr(guest_sessions, "multiplexer", screen)
+    adapter = MagicMock(send_text=AsyncMock(return_value=(True, "")))
+    await _REAL_TYPE_RENAME(adapter, "codex", "hc-t40", "xy-4")
+    adapter.send_text.assert_awaited_once_with("hc-t40", "/rename xy-4")
+
+
+async def test_rename_send_is_retried(monkeypatch: pytest.MonkeyPatch, fast) -> None:
+    monkeypatch.setattr(guest_sessions, "multiplexer", Screen("❯ \n"))
+    adapter = MagicMock(send_text=AsyncMock(side_effect=[(False, "busy"), (True, "")]))
+    await _REAL_TYPE_RENAME(adapter, "claude", "hc-t40", "xy-4")
+    assert adapter.send_text.await_count == 2
+
+
+async def test_rename_gives_up_without_an_input_box(
+    monkeypatch: pytest.MonkeyPatch, fast
+) -> None:
+    monkeypatch.setattr(guest_sessions, "multiplexer", Screen("loading"))
+    monkeypatch.setattr(guest_sessions, "READY_TIMEOUT_S", 0)
+    adapter = MagicMock(send_text=AsyncMock())
+    await _REAL_TYPE_RENAME(adapter, "codex", "hc-t40", "xy-4")
+    adapter.send_text.assert_not_awaited()
