@@ -107,6 +107,13 @@ _WHERE_LABEL = "where"
 _TAB_LABEL = "herdr.tab"
 _WHERE_SEPARATOR = " / "
 
+# Codex terminal titles: items joined by " | "; the activity item (a braille
+# spinner frame while working) is joined by a plain space instead.
+_TITLE_SEPARATOR = " | "
+_SPINNER_RE = re.compile(r"^[\u2800-\u28ff]\s+")
+# A failed tab rename is not retried for the same name sooner than this.
+_TAB_RENAME_RETRY_S = 60.0
+
 _HC_CAPABILITIES = MultiplexerCapabilities(
     name="hc",
     ids_stable_across_restart=True,
@@ -226,6 +233,28 @@ def address_for_window_id(window_id: str) -> str | None:
 
 def _is_remote(address: str) -> bool:
     return "/" in address
+
+
+# ── Session names ──────────────────────────────────────────────────────
+
+
+def codex_title_name(title: str, cwd: str) -> str:
+    """The thread name a Codex terminal title shows ("" when it shows none).
+
+    Codex's default title is ``[activity] <thread name> | <project>``: the
+    activity item (a spinner frame while working) is joined by a space, the
+    others by " | ", and an unnamed thread leaves its name out. The last part
+    must be the folder or one of its parents (the project name is the git root
+    or the folder), so a customised title is never misread as a name.
+    """
+    parts = [part.strip() for part in title.split(_TITLE_SEPARATOR)]
+    if len(parts) < 2 or not cwd:
+        return ""
+    folder = Path(cwd)
+    names = {path.name for path in (folder, *folder.parents) if path.name}
+    if parts[-1] not in names:
+        return ""
+    return _SPINNER_RE.sub("", parts[-2]).strip()
 
 
 # ── Key translation ────────────────────────────────────────────────────
@@ -487,6 +516,13 @@ class HcManager:
         self._claude_sessions_dir = claude_sessions_dir
         # pid -> (session file mtime, session name), so a /rename is picked up.
         self._session_names: dict[int, tuple[float, str]] = {}
+        # address -> last Codex thread name, reused while its title shows a
+        # blocked prompt's message instead of the name.
+        self._codex_names: dict[str, str] = {}
+        # Background tab renames: one batch in flight; failed (tab, name)
+        # pairs wait _TAB_RENAME_RETRY_S before the next attempt.
+        self._tab_sync_task: asyncio.Task[None] | None = None
+        self._tab_rename_failures: dict[tuple[str, str], float] = {}
         # Per-address history-read backoff deadlines and in-flight reads.
         self._history_backoff: dict[str, float] = {}
         self._history_inflight: set[str] = set()
@@ -670,9 +706,32 @@ class HcManager:
         self._session_names[pid] = (mtime, name)
         return name
 
+    def _codex_thread_name(self, terminal: Mapping[str, object]) -> str:
+        """The Codex thread name from the terminal title (auto titles included)."""
+        address = _str(terminal.get("address"))
+        status = parse_status(terminal.get("status"))
+        if status is not None and status.state == "blocked":
+            return self._codex_names.get(address, "")
+        name = codex_title_name(_str(terminal.get("title")), _str(terminal.get("cwd")))
+        if name:
+            self._codex_names[address] = name
+        else:
+            self._codex_names.pop(address, None)
+        return name
+
+    def _agent_name(self, terminal: Mapping[str, object]) -> str:
+        """The name the terminal's agent gives its session ("" if unnamed).
+
+        Read from the live agent each time, so a ``/rename`` and a resumed
+        named session both show up on the next listing.
+        """
+        if self._provider(terminal) == "codex":
+            return self._codex_thread_name(terminal)
+        return self._claude_session_name(terminal)
+
     def _base_name(self, terminal: Mapping[str, object]) -> str:
         """A terminal's topic name before disambiguation: session name, else tab."""
-        return self._claude_session_name(terminal) or self._space_tab(terminal)[1]
+        return self._agent_name(terminal) or self._space_tab(terminal)[1]
 
     def _shared_tabs(self, terminals: Sequence[Mapping[str, object]]) -> frozenset[str]:
         """Tab names that more than one visible terminal uses."""
@@ -768,7 +827,66 @@ class HcManager:
         if terminals is None:
             return None
         shared = self._shared_tabs(terminals)
-        return [self._to_window(t, shared) for t in terminals]
+        windows = [self._to_window(t, shared) for t in terminals]
+        self._schedule_tab_sync(terminals)
+        return windows
+
+    # ── Tab names follow session names ─────────────────────────────────
+
+    def _schedule_tab_sync(self, terminals: Sequence[Mapping[str, object]]) -> None:
+        """Start renaming tabs whose agent's session name differs (background)."""
+        if self._tab_sync_task is not None and not self._tab_sync_task.done():
+            return
+        renames = self._tab_renames(terminals)
+        if renames:
+            self._tab_sync_task = asyncio.create_task(self._rename_tabs(renames))
+
+    def _tab_renames(
+        self, terminals: Sequence[Mapping[str, object]]
+    ) -> list[tuple[str, str]]:
+        """(tab id, session name) for each tab that should take its agent's name.
+
+        A tab is renamed only when exactly one name is reported in it: a split
+        tab whose agents carry different names keeps its own.
+        """
+        names: dict[str, set[str]] = {}
+        current: dict[str, str] = {}
+        for terminal in terminals:
+            labels = _labels(terminal)
+            tab_id = _str(labels.get(_TAB_LABEL))
+            if not tab_id or not labels.get(_WHERE_LABEL):
+                continue
+            if not self._is_visible(terminal):
+                continue
+            current[tab_id] = self._space_tab(terminal)[1]
+            name = self._agent_name(terminal)
+            if name:
+                names.setdefault(tab_id, set()).add(name)
+        now = time.monotonic()
+        self._tab_rename_failures = {
+            key: at
+            for key, at in self._tab_rename_failures.items()
+            if now - at < _TAB_RENAME_RETRY_S
+        }
+        renames: list[tuple[str, str]] = []
+        for tab_id, found in names.items():
+            if len(found) != 1:
+                continue
+            (name,) = found
+            if name != current[tab_id] and (tab_id, name) not in (
+                self._tab_rename_failures
+            ):
+                renames.append((tab_id, name))
+        return renames
+
+    async def _rename_tabs(self, renames: Sequence[tuple[str, str]]) -> None:
+        for tab_id, name in renames:
+            if await self._rename_tab(tab_id, name):
+                logger.info(
+                    "Renamed Herdr tab to the session name", tab=tab_id, name=name
+                )
+            else:
+                self._tab_rename_failures[(tab_id, name)] = time.monotonic()
 
     async def window_exists(self, window_id: str) -> bool | None:
         """Ask herdr-core about one terminal: True, False, or None if unknown.
@@ -1102,8 +1220,12 @@ class HcManager:
             # A terminal started without the app (the ``terminal.run``
             # fallback) has no tab to rename.
             return False
+        return await self._rename_tab(tab, new_name)
+
+    async def _rename_tab(self, tab_id: str, name: str) -> bool:
+        """``herdr-app do tab.rename``; True on success."""
         rc, _out, err = await self._app_run(
-            ["do", "tab.rename", json.dumps({"id": tab, "name": new_name})]
+            ["do", "tab.rename", json.dumps({"id": tab_id, "name": name})]
         )
         if rc != 0:
             logger.debug("herdr-app tab.rename failed", rc=rc, err=err.strip())
