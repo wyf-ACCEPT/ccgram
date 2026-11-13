@@ -1209,3 +1209,149 @@ async def test_claude_session_name_names_the_topic(tmp_path) -> None:
     session_file.write_text(json.dumps({"pid": 4242, "name": None}))
     os.utime(session_file, (time.time() + 10, time.time() + 10))
     assert manager._to_window(terminal).window_name == "cua"
+
+
+# ── Session names drive tab names ───────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("title", "cwd", "expected"),
+    [
+        ("bob-2 | Bob", "/a/Bob", "bob-2"),
+        ("⠋ bob-2 | Bob", "/a/Bob", "bob-2"),
+        ("Bob", "/a/Bob", ""),
+        ("⠙ Bob", "/a/Bob", ""),
+        ("ai-video | Sessions", "/x/Sessions", "ai-video"),
+        ("a | b | Repo", "/r/Repo/sub", "b"),
+        ("foo | Other", "/a/Bob", ""),
+        ("解释次留水平含义 | Bob", "/a/Bob", "解释次留水平含义"),
+        ("", "/a/Bob", ""),
+        ("bob-2 | Bob", "", ""),
+    ],
+)
+def test_codex_title_name(title: str, cwd: str, expected: str) -> None:
+    assert hc_module.codex_title_name(title, cwd) == expected
+
+
+def _codex(
+    address: str = "t43",
+    *,
+    title: str = "bob-2 | Bob",
+    tab: str = "bob-old",
+    tab_id: str = "tbxy",
+    state: str = "idle",
+    cwd: str = "/f/Bob",
+) -> dict:
+    return {
+        "address": address,
+        "state": "live",
+        "title": title,
+        "cwd": cwd,
+        "labels": {"herdr.tab": tab_id, "where": f"Bob / {tab}"},
+        "status": {"app": "codex", "state": state},
+        "foreground": {"pid": 9100, "argv": ["codex"]},
+    }
+
+
+def test_codex_thread_name_names_the_window() -> None:
+    manager = _manager(_listing_fake([]))
+    assert manager._to_window(_codex()).window_name == "bob-2"
+    # An unnamed thread falls back to the tab.
+    assert manager._to_window(_codex(title="Bob")).window_name == "bob-old"
+
+
+def test_blocked_codex_keeps_its_last_name() -> None:
+    manager = _manager(_listing_fake([]))
+    assert manager._to_window(_codex()).window_name == "bob-2"
+    blocked = _codex(title="Action required bob-2 | Bob", state="blocked")
+    assert manager._to_window(blocked).window_name == "bob-2"
+
+
+async def _settle(manager: HcManager) -> None:
+    task = manager._tab_sync_task
+    if task is not None:
+        await task
+
+
+async def test_tab_follows_the_session_name() -> None:
+    app = FakeApp().on("do", "tab.rename", out="{}")
+    manager = _manager(_listing_fake([_codex()]), app)
+    await manager.list_windows_for_reconciliation()
+    await _settle(manager)
+    assert app.calls == [
+        ["do", "tab.rename", json.dumps({"id": "tbxy", "name": "bob-2"})]
+    ]
+
+
+async def test_tab_already_matching_is_left_alone() -> None:
+    app = FakeApp().on("do", "tab.rename", out="{}")
+    manager = _manager(_listing_fake([_codex(tab="bob-2")]), app)
+    await manager.list_windows_for_reconciliation()
+    await _settle(manager)
+    assert app.calls == []
+
+
+async def test_unnamed_session_leaves_the_tab_alone() -> None:
+    app = FakeApp().on("do", "tab.rename", out="{}")
+    manager = _manager(_listing_fake([_codex(title="Bob")]), app)
+    await manager.list_windows_for_reconciliation()
+    await _settle(manager)
+    assert app.calls == []
+
+
+async def test_split_tab_with_two_names_is_left_alone() -> None:
+    app = FakeApp().on("do", "tab.rename", out="{}")
+    terminals = [_codex(), _codex("t44", title="bob-9 | Bob")]
+    manager = _manager(_listing_fake(terminals), app)
+    await manager.list_windows_for_reconciliation()
+    await _settle(manager)
+    assert app.calls == []
+
+
+async def test_split_tab_with_one_agent_follows_it() -> None:
+    app = FakeApp().on("do", "tab.rename", out="{}")
+    shell = {
+        "address": "t45",
+        "state": "live",
+        "title": "zsh",
+        "cwd": "/f/Bob",
+        "labels": {"herdr.tab": "tbxy", "where": "Bob / bob-old"},
+        "foreground": {"pid": 9200, "argv": ["zsh"]},
+    }
+    manager = _manager(_listing_fake([_codex(), shell]), app)
+    await manager.list_windows_for_reconciliation()
+    await _settle(manager)
+    assert [call[1] for call in app.calls] == ["tab.rename"]
+
+
+async def test_failed_tab_rename_backs_off(monkeypatch) -> None:
+    app = FakeApp().on("do", "tab.rename", rc=1, err="boom")
+    manager = _manager(_listing_fake([_codex()]), app)
+    now = [1000.0]
+    monkeypatch.setattr(hc_module.time, "monotonic", lambda: now[0])
+    await manager.list_windows_for_reconciliation()
+    await _settle(manager)
+    await manager.list_windows_for_reconciliation()
+    await _settle(manager)
+    assert len(app.calls) == 1
+    now[0] += 61
+    await manager.list_windows_for_reconciliation()
+    await _settle(manager)
+    assert len(app.calls) == 2
+
+
+async def test_done_tab_rename_waits_for_the_label(monkeypatch) -> None:
+    app = FakeApp().on("do", "tab.rename", out="{}")
+    manager = _manager(_listing_fake([_codex()]), app)
+    now = [1000.0]
+    monkeypatch.setattr(hc_module.time, "monotonic", lambda: now[0])
+    await manager.list_windows_for_reconciliation()
+    await _settle(manager)
+    # The label still shows the old tab name for a moment: no second rename.
+    await manager.list_windows_for_reconciliation()
+    await _settle(manager)
+    assert len(app.calls) == 1
+    now[0] += 11
+    await manager.list_windows_for_reconciliation()
+    await _settle(manager)
+    assert len(app.calls) == 2
