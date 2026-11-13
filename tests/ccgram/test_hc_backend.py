@@ -1338,3 +1338,20 @@ async def test_failed_tab_rename_backs_off(monkeypatch) -> None:
     await manager.list_windows_for_reconciliation()
     await _settle(manager)
     assert len(app.calls) == 2
+
+
+async def test_done_tab_rename_waits_for_the_label(monkeypatch) -> None:
+    app = FakeApp().on("do", "tab.rename", out="{}")
+    manager = _manager(_listing_fake([_codex()]), app)
+    now = [1000.0]
+    monkeypatch.setattr(hc_module.time, "monotonic", lambda: now[0])
+    await manager.list_windows_for_reconciliation()
+    await _settle(manager)
+    # The label still shows the old tab name for a moment: no second rename.
+    await manager.list_windows_for_reconciliation()
+    await _settle(manager)
+    assert len(app.calls) == 1
+    now[0] += 11
+    await manager.list_windows_for_reconciliation()
+    await _settle(manager)
+    assert len(app.calls) == 2
