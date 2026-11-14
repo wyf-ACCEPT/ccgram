@@ -27,6 +27,7 @@ from ccgram.providers.base import (
     SessionStartEvent,
     StatusUpdate,
 )
+from ccgram.providers.codex_prompts import parse_codex_prompt
 from ccgram.providers.codex_tui import parse_codex_menu
 from ccgram.terminal_parser import extract_interactive_content
 
@@ -220,8 +221,8 @@ class CodexProvider(JsonlProvider):
         *,
         pane_title: str = "",  # noqa: ARG002
     ) -> StatusUpdate | None:
-        """Parse Codex command menus before generic interactive prompts."""
-        codex_menu = parse_codex_menu(pane_text)
+        """Parse Codex menus and prompts before generic interactive prompts."""
+        codex_menu = parse_codex_menu(pane_text) or parse_codex_prompt(pane_text)
         if codex_menu:
             return codex_menu
 
