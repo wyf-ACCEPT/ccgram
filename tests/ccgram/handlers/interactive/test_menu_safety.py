@@ -1,5 +1,6 @@
 """Cross-agent controls must use the captured prompt, not a newer display."""
 
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -15,6 +16,7 @@ from ccgram.handlers.interactive.interactive_ui import (
     handle_interactive_ui,
 )
 from ccgram.providers.base import StatusUpdate, TerminalControl, TerminalMenu
+from ccgram.providers.codex import CodexProvider
 
 USER, CHAT, THREAD, MESSAGE = 8120, -8120, 8121, 8122
 WINDOW = "menu-safety"
@@ -195,3 +197,35 @@ async def test_button_only_menu_replies_never_send_input(display, ui_type):
     assert message.reply_text.call_args.args[0] == (
         "This menu does not accept text. Use its buttons."
     )
+
+
+async def test_codex_tool_approval_taps_send_the_option_digit(display):
+    capture = (
+        Path(__file__).parents[2]
+        / "providers"
+        / "fixtures"
+        / "codex_prompts"
+        / "mcp-computer-use.txt"
+    ).read_text()
+    keyboard = await render(display, CodexProvider().parse_terminal_status(capture))
+    labels = [button.text for row in keyboard.inline_keyboard for button in row]
+    assert labels == [
+        "1. Allow",
+        "2. Allow for this session",
+        "3. Always allow",
+        "4. Cancel",
+        "⎋ Esc",
+        "🔄",
+    ]
+    text = display.client.send_message.call_args.kwargs["text"]
+    assert 'Allow Computer Use to use "Safari"?' in text
+    assert "Unverified" not in text
+
+    data = str(keyboard.inline_keyboard[0][1].callback_data)
+    await handle_interactive_callback(
+        display.query, USER, data, display.update, display.context
+    )
+    call = display.adapter.send_text.call_args
+    assert call.args == (WINDOW, "2")
+    assert call.kwargs["submit"] is False
+    display.adapter.send_keys.assert_not_called()
