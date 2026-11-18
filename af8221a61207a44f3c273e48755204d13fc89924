@@ -1,0 +1,37 @@
+tests/integration/test_hook_lock_timeout.py
+  s_b2124aec123848::t_acaf8773799f32 45-51,89-127
+tests/ccgram/hooks/test_state_files.py
+  s_b2124aec123848::t_8b4a9154bad6cc 213-221,254-263
+tests/ccgram/test_hook_session_start_order.py
+  s_b2124aec123848::t_3c6c6a84cdaa8f 1-101
+src/ccgram/hook.py
+  s_b2124aec123848::t_9b57f414a89486 42-47,91-94,1153-1168
+  s_b2124aec123848::t_0ee084c253f8ea 1229-1230,1232-1237,1247,1287-1296,1304,1328-1337,2016-2017
+.claude/rules/architecture.md
+  s_b2124aec123848::t_511e6481552ae2 81-82
+tests/conftest.py
+  s_b2124aec123848::t_89635c8394313c 57-78
+  s_b2124aec123848::t_f9272990fdab58 56
+tests/ccgram/test_session_map_primary.py
+  s_b2124aec123848::t_8b4a9154bad6cc 73-90
+src/ccgram/hooks/state_files.py
+  s_b2124aec123848::t_e9672657191f1e 89-92,210-214,224,236,249-250
+src/ccgram/session_map.py
+  s_b2124aec123848::t_6e087c1ffd712e 245-246,248
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bbffb1b3d7994d9ad021f92a05b2be2afa3b5742",
+  "prompts": {},
+  "sessions": {
+    "s_b2124aec123848": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18ac8cf0-4e04-48f5-9762-6f450759501c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
