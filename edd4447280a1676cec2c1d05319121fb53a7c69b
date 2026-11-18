@@ -1,0 +1,21 @@
+src/ccgram/handlers/interactive/interactive_ui.py
+  s_b2124aec123848::t_85391339164586 557-560,573-576,578
+tests/ccgram/handlers/interactive/test_question_choices.py
+  s_b2124aec123848::t_85391339164586 154-164,172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "abd5e4903944f08864f4a30b715e7fcdcf428a3d",
+  "prompts": {},
+  "sessions": {
+    "s_b2124aec123848": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18ac8cf0-4e04-48f5-9762-6f450759501c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
