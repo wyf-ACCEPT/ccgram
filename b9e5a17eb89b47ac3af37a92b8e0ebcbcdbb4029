@@ -1,0 +1,28 @@
+src/ccgram/handlers/interactive/__init__.py
+  s_b2124aec123848::t_55be32eaa33215 33-34,38-39
+tests/ccgram/handlers/interactive/test_question_choices.py
+  s_b2124aec123848::t_c2d83f29aa19ac 16-17,95-97,104-112,114,116-126,132,134-136,140,143,146,156,159,161-163,166-168,171,173
+  s_b2124aec123848::t_6185152f554421 174-199
+src/ccgram/handlers/interactive/interactive_ui.py
+  s_b2124aec123848::t_55be32eaa33215 447-448,451,453-454,456-458,463-526
+src/ccgram/handlers/interactive/interactive_callbacks.py
+  s_b2124aec123848::t_55be32eaa33215 40,153-191,223-237
+src/ccgram/handlers/text/text_handler.py
+  s_b2124aec123848::t_55be32eaa33215 614,617-618,623,630,632
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "100602b5097753a5533ec5e7cd28b98e11b3c450",
+  "prompts": {},
+  "sessions": {
+    "s_b2124aec123848": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18ac8cf0-4e04-48f5-9762-6f450759501c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
