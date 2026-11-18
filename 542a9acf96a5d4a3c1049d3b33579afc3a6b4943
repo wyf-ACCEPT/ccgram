@@ -1,0 +1,56 @@
+tests/ccgram/providers/fixtures/codex_prompts/mcp-approval-form-with-session-persist.txt
+  s_1dcf832b515331::t_4bb60ac704d64f 1-15
+tests/ccgram/providers/fixtures/codex_prompts/question.txt
+  s_1dcf832b515331::t_4bb60ac704d64f 1-118
+src/ccgram/providers/codex_prompts.py
+  s_1dcf832b515331::t_8ab6ac3bddaa93 70-71,73,127-129,162,164
+  s_1dcf832b515331::t_a18cf96e70eff6 35
+  s_1dcf832b515331::t_b8a56c5af8d62e 12-15,17-19,30-31,82,118-119,134
+  s_1dcf832b515331::t_683a1db9c95156 130-131,133,135-160
+  s_1dcf832b515331::t_4c21227a8a82b2 1-11,16,20-29,32-34,36-69,72,74-81,83-117,120-126,132,161,163,165-210
+tests/ccgram/providers/test_codex_prompts.py
+  s_1dcf832b515331::t_b8a56c5af8d62e 54-62,187-198
+  s_1dcf832b515331::t_2191a3d39c075b 97
+  s_1dcf832b515331::t_0e1dc5404fd228 1-53,63-96,98-186,199-212
+tests/ccgram/providers/fixtures/codex_prompts/mcp-boolean-form.txt
+  s_1dcf832b515331::t_4bb60ac704d64f 1-15
+.claude/rules/architecture.md
+  s_1dcf832b515331::t_30d2a94cb692e9 45
+tests/ccgram/providers/fixtures/codex_prompts/auto-resolution-countdown.txt
+  s_1dcf832b515331::t_4bb60ac704d64f 1-9
+tests/ccgram/providers/fixtures/codex_prompts/unanswered-confirmation.txt
+  s_1dcf832b515331::t_4bb60ac704d64f 1-11
+tests/ccgram/providers/fixtures/codex_prompts/freeform.txt
+  s_1dcf832b515331::t_4bb60ac704d64f 1-9
+tests/ccgram/providers/fixtures/codex_prompts/implement-plan.txt
+  s_1dcf832b515331::t_8f18b3e0bdf702 1-119
+tests/ccgram/handlers/interactive/test_menu_safety.py
+  s_1dcf832b515331::t_266643d9011d00 3,19
+  s_1dcf832b515331::t_46922e4cf0725d 200-220,222-231
+  s_1dcf832b515331::t_2191a3d39c075b 221
+tests/ccgram/providers/fixtures/codex_prompts/footer-wrap.txt
+  s_1dcf832b515331::t_4bb60ac704d64f 1-10
+tests/ccgram/providers/fixtures/codex_prompts/exec-approval.txt
+  s_1dcf832b515331::t_4bb60ac704d64f 1-119
+tests/ccgram/providers/fixtures/codex_prompts/mcp-computer-use.txt
+  s_1dcf832b515331::t_0b9a6d96467670 2-3,5-9,11,13-19
+  s_1dcf832b515331::t_2191a3d39c075b 1,4,10,12
+src/ccgram/providers/codex.py
+  s_1dcf832b515331::t_d753d203f10cc9 30,224-225
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dfc7cbd374b4d0f6a35baa1769e33c2c3f94c035",
+  "prompts": {},
+  "sessions": {
+    "s_1dcf832b515331": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ad57b95f-05b2-44b6-a5c5-4304a027e8a3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
