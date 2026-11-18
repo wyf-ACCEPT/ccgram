@@ -1,0 +1,36 @@
+tests/ccgram/handlers/topics/test_workspace_picker.py
+  s_b2124aec123848::t_fe7220b87611f1 316-323,326-330,348-355
+  s_b2124aec123848::t_a59d7e3db87d44 399
+src/ccgram/handlers/topics/typed_topic.py
+  s_b2124aec123848::t_53f06ceae1bb12 37,252-256
+src/ccgram/handlers/topics/window_launch_service.py
+  s_b2124aec123848::t_53f06ceae1bb12 48,634-638
+tests/ccgram/handlers/topics/test_topic_routes.py
+  s_b2124aec123848::t_bfd0e81eadcd5c 18,257-291
+src/ccgram/handlers/topics/topic_routes.py
+  s_b2124aec123848::t_53f06ceae1bb12 12-13,29,73-93
+  s_b2124aec123848::t_c2a4e254cdc3cf 94-95
+tests/ccgram/handlers/topics/test_typed_topic.py
+  s_b2124aec123848::t_bfd0e81eadcd5c 22,118-130
+  s_b2124aec123848::t_6ac1610afe1e92 131
+.claude/rules/architecture.md
+  s_b2124aec123848::t_6ece3e6221600d 220
+docs/guides.md
+  s_b2124aec123848::t_eed10b96698bd5 553-556
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d9dda7b3ca72c6dc7f25fdd75c283a9ab813c847",
+  "prompts": {},
+  "sessions": {
+    "s_b2124aec123848": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18ac8cf0-4e04-48f5-9762-6f450759501c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
