@@ -1,0 +1,32 @@
+tests/ccgram/test_pasted_content.py
+  s_1dcf832b515331::t_69df332a5f8828 1-6,10-19
+  s_1dcf832b515331::t_232c9c1089741c 7-9
+tests/ccgram/handlers/presence/test_presence.py
+  s_1dcf832b515331::t_232c9c1089741c 80-88
+src/ccgram/handlers/presence/presence.py
+  s_1dcf832b515331::t_4f9e5e828ed79c 73
+  s_1dcf832b515331::t_c8c6832a94de99 32
+src/ccgram/pasted_content.py
+  s_1dcf832b515331::t_4f9e5e828ed79c 1-25
+src/ccgram/handlers/telegram_origin.py
+  s_1dcf832b515331::t_c8c6832a94de99 9
+  s_1dcf832b515331::t_4f9e5e828ed79c 32
+tests/ccgram/handlers/test_telegram_origin.py
+  s_1dcf832b515331::t_69df332a5f8828 45-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b2978958ca8d660ffb16852d0d6be256ad228413",
+  "prompts": {},
+  "sessions": {
+    "s_1dcf832b515331": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ad57b95f-05b2-44b6-a5c5-4304a027e8a3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
