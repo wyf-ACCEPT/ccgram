@@ -1,0 +1,37 @@
+src/ccgram/handlers/presence/desk_brief.py
+  s_1dcf832b515331::t_040d0d2436e7d7 40-41,70-74
+  s_1dcf832b515331::t_968d58c6eaf622 1-9,11-39,42-69,75-111,115-155
+  s_1dcf832b515331::t_2578ab943c5bcc 10,112-114
+docs/guides.md
+  s_1dcf832b515331::t_182ee4e159317b 239,303-310
+  s_1dcf832b515331::t_6dde0eca617671 311
+src/ccgram/handlers/presence/digest.py
+  s_1dcf832b515331::t_8ebf4aba5f9460 16-21,36,39,44,46,81-82,94-103,136,145,223-303,305-308,333-334,337-347,352,371
+tests/ccgram/test_config.py
+  s_1dcf832b515331::t_182ee4e159317b 249,256-263
+tests/ccgram/handlers/presence/test_desk_brief.py
+  s_1dcf832b515331::t_f223e66190952e 115,118-122,207,295,305
+  s_1dcf832b515331::t_94626e24e38b64 97
+  s_1dcf832b515331::t_140a878cbf4604 1-96,98-114,116-117,123-136,141-206,208-294,296-304,306-324
+  s_1dcf832b515331::t_040d0d2436e7d7 137-140
+src/ccgram/config.py
+  s_1dcf832b515331::t_38566fa8dbaf2a 462-466
+.claude/rules/architecture.md
+  s_1dcf832b515331::t_4a5c1b42be46fc 182-183
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e01fad27d84a7e0a18b38faf4160f4203f10372d",
+  "prompts": {},
+  "sessions": {
+    "s_1dcf832b515331": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ad57b95f-05b2-44b6-a5c5-4304a027e8a3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
