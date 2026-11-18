@@ -1,0 +1,21 @@
+docs/guides.md
+  s_1dcf832b515331::t_8aa947a34096d5 830
+tests/ccgram/handlers/test_model_command.py
+  s_1dcf832b515331::t_0ea1907c2777f7 301,314
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d713ff290374456a842d9281f43fea61f56ce35d",
+  "prompts": {},
+  "sessions": {
+    "s_1dcf832b515331": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ad57b95f-05b2-44b6-a5c5-4304a027e8a3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
