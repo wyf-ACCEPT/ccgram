@@ -1,0 +1,38 @@
+tests/ccgram/handlers/test_file_handler.py
+  s_1dcf832b515331::t_839dc0d6ab18bf 13,216,265,299-381
+  s_1dcf832b515331::t_5b239f7ad370ae 382-383
+tests/ccgram/handlers/test_telegram_origin.py
+  s_1dcf832b515331::t_839dc0d6ab18bf 6,214-231
+src/ccgram/session_protocol/models.py
+  s_1dcf832b515331::t_eb5fdc9066b523 29-31
+src/ccgram/multiplexer/hc.py
+  s_1dcf832b515331::t_3244e9d308ba29 1009,1011-1012,1019,1021,1023-1032
+src/ccgram/handlers/file_handler.py
+  s_1dcf832b515331::t_ade0b85ab928be 27,180,183-184,226-242,270,273,275-283,306-316,319-321
+src/ccgram/session_protocol/telegram.py
+  s_1dcf832b515331::t_eb5fdc9066b523 11-17,45
+src/ccgram/session_protocol/actions.py
+  s_1dcf832b515331::t_3244e9d308ba29 291-292,302-304,311-315,330
+  s_1dcf832b515331::t_eb5fdc9066b523 10-11,22,32-33,240-241,298,309-310,316-329,331
+  s_1dcf832b515331::t_d3e6cc8737ea29 288
+  s_1dcf832b515331::t_a14468466c4a8f 332
+src/ccgram/handlers/telegram_origin.py
+  s_1dcf832b515331::t_0d51cff9cda71a 9,120
+  s_1dcf832b515331::t_ade0b85ab928be 135-137,142-147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4a0d6e849881b79787f53df5d677a807f4b99a27",
+  "prompts": {},
+  "sessions": {
+    "s_1dcf832b515331": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ad57b95f-05b2-44b6-a5c5-4304a027e8a3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
