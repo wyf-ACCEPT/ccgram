@@ -1,0 +1,21 @@
+src/ccgram/terminal_parser.py
+  s_b2124aec123848::t_38a2e0bc2fc6a9 214-240,278-280,313
+tests/ccgram/test_terminal_parser.py
+  s_b2124aec123848::t_669a9120c86e9d 1316-1345
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "39d23f7a96c08326434827cd684550eb535bcce8",
+  "prompts": {},
+  "sessions": {
+    "s_b2124aec123848": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18ac8cf0-4e04-48f5-9762-6f450759501c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
