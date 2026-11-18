@@ -1,0 +1,76 @@
+src/ccgram/config.py
+  s_b2124aec123848::t_627b661d1434fe 446-462
+  s_b2124aec123848::t_7d5f48a5b99801 142-152
+src/ccgram/handlers/messaging_pipeline/message_routing.py
+  s_b2124aec123848::t_53bcd12dca096d 29-30,218-234
+  s_b2124aec123848::t_a305bf3db3b19a 235-236
+src/ccgram/handlers/hook_events.py
+  s_b2124aec123848::t_e729b9fdfab9ac 342-344
+  s_b2124aec123848::t_c66f2586e25036 37-38
+  s_b2124aec123848::t_04ecdfb8185220 339,341,345
+tests/ccgram/handlers/messaging_pipeline/test_message_routing.py
+  s_b2124aec123848::t_e44b03a3f54fba 320-382
+src/ccgram/handlers/interactive/interactive_ui.py
+  s_b2124aec123848::t_04ecdfb8185220 47
+  s_b2124aec123848::t_57b18e097af27d 988-1007
+  s_b2124aec123848::t_d309fa57404252 987
+tests/ccgram/handlers/test_registry.py
+  s_b2124aec123848::t_d4a0537b4085a5 9
+  s_b2124aec123848::t_3c881fcefb596f 99-100
+tests/ccgram/handlers/presence/test_presence.py
+  s_b2124aec123848::t_cbe209defefa23 1-137
+src/ccgram/handlers/status/topic_emoji.py
+  s_b2124aec123848::t_00c1f370ae3b9f 515-528
+tests/ccgram/handlers/presence/test_digest.py
+  s_b2124aec123848::t_dc3250029bc434 1-14,21-81,89-139,141-160,162-183,185-206,208-231,233-239,241-246
+  s_b2124aec123848::t_57b18e097af27d 15-20,82-88,140,161,184,207,232,240
+src/ccgram/handlers/telegram_origin.py
+  s_b2124aec123848::t_e729b9fdfab9ac 10,52-54
+tests/ccgram/handlers/presence/test_gates.py
+  s_b2124aec123848::t_e9536d37e83f1d 1-14,21-80,82-100,102-109
+  s_b2124aec123848::t_57b18e097af27d 15-20,81,101
+src/ccgram/handlers/presence/presence.py
+  s_b2124aec123848::t_0647e863d96b71 209-213
+  s_b2124aec123848::t_76a9a0d4f6504f 1-208,214-218
+tests/ccgram/handlers/test_hook_events.py
+  s_b2124aec123848::t_e6274627f78737 630-649
+.claude/rules/architecture.md
+  s_b2124aec123848::t_d6c40e42ce5a2d 112,179-184
+  s_b2124aec123848::t_46b2499e80bfcf 185
+src/ccgram/handlers/presence/desk_mode.py
+  s_b2124aec123848::t_2e052435c87ec5 1-56
+src/ccgram/handlers/presence/__init__.py
+  s_b2124aec123848::t_351531fcf28a54 1-23
+src/ccgram/handlers/polling/periodic_tasks.py
+  s_b2124aec123848::t_e729b9fdfab9ac 60-63
+  s_b2124aec123848::t_0217d2f0777278 21,40-41
+tests/ccgram/test_config.py
+  s_b2124aec123848::t_dd80f8d9332f64 243-272
+  s_b2124aec123848::t_4ca109f69a524a 242
+src/ccgram/handlers/messaging_pipeline/message_queue.py
+  s_b2124aec123848::t_eea188b507d60b 1122-1124
+  s_b2124aec123848::t_f8268385572840 43
+src/ccgram/handlers/presence/digest.py
+  s_b2124aec123848::t_f5b7047ecb9121 1-253
+  s_b2124aec123848::t_635b9f812a3b0f 254-255
+docs/guides.md
+  s_b2124aec123848::t_12b6585e436dcf 236-238,278-304
+src/ccgram/handlers/registry.py
+  s_b2124aec123848::t_9ff42ece94a32b 23,44,158-162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1b406b52b57cb33d3e8f09bff701ff8c6280c546",
+  "prompts": {},
+  "sessions": {
+    "s_b2124aec123848": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18ac8cf0-4e04-48f5-9762-6f450759501c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
