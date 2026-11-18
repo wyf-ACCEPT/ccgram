@@ -1,0 +1,32 @@
+tests/ccgram/handlers/presence/test_gates.py
+  s_b2124aec123848::t_3ca185fd1e92bf 110-143
+.claude/rules/architecture.md
+  s_b2124aec123848::t_e235760e0b3b3f 184
+src/ccgram/handlers/polling/window_tick/apply.py
+  s_b2124aec123848::t_cf2e9fd941e2ca 138-140,490-495,519-521,549-554,610-612
+tests/ccgram/handlers/test_hook_events.py
+  s_b2124aec123848::t_a036c1a707be79 686-688
+src/ccgram/handlers/hook_events.py
+  s_b2124aec123848::t_cf2e9fd941e2ca 373-375
+src/ccgram/handlers/status/topic_emoji.py
+  s_b2124aec123848::t_cf2e9fd941e2ca 35,407-408,422-424,430-432,482-497
+  s_b2124aec123848::t_bee9e05a48c76e 498-499
+docs/guides.md
+  s_b2124aec123848::t_323ef4e92200ee 294-295
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7d287095017f1ec33b10c2a6ecd8d62b48ef365a",
+  "prompts": {},
+  "sessions": {
+    "s_b2124aec123848": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18ac8cf0-4e04-48f5-9762-6f450759501c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
