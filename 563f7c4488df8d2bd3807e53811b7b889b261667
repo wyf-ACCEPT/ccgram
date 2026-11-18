@@ -1,0 +1,27 @@
+src/ccgram/handlers/provider_display.py
+  s_b2124aec123848::t_3a95453e1f8d7f 3-4,32-40,44
+  s_b2124aec123848::t_8b3e3f3f3b0438 41-42,45
+tests/ccgram/handlers/test_provider_display.py
+  s_b2124aec123848::t_893a1f4caea2b4 1-15
+tests/ccgram/test_hc_backend.py
+  s_b2124aec123848::t_0497f97c0e3451 289-290,296,300-303,1062-1074
+src/ccgram/multiplexer/hc.py
+  s_b2124aec123848::t_8b3e3f3f3b0438 583-594,596-614,622-623,627,672-673,684-685,738-742
+  s_b2124aec123848::t_5059d543d37b19 595
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7bc1d826f3684a3c7e9d7457e95d618512972230",
+  "prompts": {},
+  "sessions": {
+    "s_b2124aec123848": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18ac8cf0-4e04-48f5-9762-6f450759501c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
