@@ -1,0 +1,34 @@
+src/ccgram/handlers/messaging_pipeline/message_queue.py
+  s_b2124aec123848::t_cb742c9854965d 967
+src/ccgram/handlers/messaging_pipeline/tool_batch.py
+  s_b2124aec123848::t_cb742c9854965d 369,387
+src/ccgram/handlers/cleanup.py
+  s_b2124aec123848::t_cb742c9854965d 77
+src/ccgram/handlers/status/status_bubble.py
+  s_b2124aec123848::t_940147227438f9 368
+  s_b2124aec123848::t_cb742c9854965d 26,55-58,60,358-367,369-374,400-402,446,465-467,469-476,497-501,539,574,582-584,594-601
+tests/ccgram/handlers/status/test_status_bubble.py
+  s_b2124aec123848::t_9ba16adcfb344c 71,86,116,148,176,219,224,241,255,285,314,321,385,389-390,430,476
+  s_b2124aec123848::t_91fa9076adfa72 809
+  s_b2124aec123848::t_f2bb7bc2ce7df6 49-59,100-105,135-140,164-169,190-195,230-235,238,244-249,253,259,270-275,300-305,379-384,414-419,442-447,460-465
+  s_b2124aec123848::t_8ab20dbff1bd03 174,413
+  s_b2124aec123848::t_56d2dda02527b2 784-808,810-814
+tests/ccgram/handlers/status/test_status_singleton.py
+  s_b2124aec123848::t_6523fd782a6251 29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b362171934070fe8575e65127022b181e8501ff2",
+  "prompts": {},
+  "sessions": {
+    "s_b2124aec123848": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18ac8cf0-4e04-48f5-9762-6f450759501c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
