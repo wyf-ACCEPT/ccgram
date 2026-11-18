@@ -1,0 +1,79 @@
+src/ccgram/handlers/presence/presence.py
+  s_1dcf832b515331::t_0ab56842313ba7 125-130,133
+  s_1dcf832b515331::t_70556a4b42be36 134
+src/ccgram/handlers/guest/__init__.py
+  s_1dcf832b515331::t_56c8d4bbc2efb3 1-6
+src/ccgram/handlers/guest/inbound.py
+  s_1dcf832b515331::t_38bf270ad144f4 1-100
+src/ccgram/handlers/guest/access.py
+  s_1dcf832b515331::t_3bf75582f5e441 1-151
+src/ccgram/handlers/file_handler.py
+  s_1dcf832b515331::t_1104b367814760 260,297-304,337-369,378-379,381,386,395,407-408,410,415,424
+  s_1dcf832b515331::t_b92ba175080822 33-35
+src/ccgram/handlers/messaging_pipeline/message_routing.py
+  s_1dcf832b515331::t_2201d37659c826 15
+  s_1dcf832b515331::t_8e273f3096d2cd 231-235
+  s_1dcf832b515331::t_9a69d24ad24eff 223-230,236-238
+src/ccgram/handlers/text/text_handler.py
+  s_1dcf832b515331::t_52a9720a80c2ef 94-98
+  s_1dcf832b515331::t_a5ea07ec59d623 63-65,772-779,822,832,837-847,859,883-907,918-933
+  s_1dcf832b515331::t_0861617e7014ea 314-319
+src/ccgram/handlers/interactive/interactive_ui.py
+  s_1dcf832b515331::t_9a69d24ad24eff 993-996
+src/ccgram/handlers/presence/digest.py
+  s_1dcf832b515331::t_8e273f3096d2cd 390
+  s_1dcf832b515331::t_2201d37659c826 83-85,142-159,296-299,313,316,418
+  s_1dcf832b515331::t_08c4876dadad1c 287-292,300,302-310,327-328,331,333,388-389
+  s_1dcf832b515331::t_5ac2ca2ee91a41 293-294
+src/ccgram/handlers/messaging_pipeline/message_queue.py
+  s_1dcf832b515331::t_9a69d24ad24eff 1122-1127
+src/ccgram/config.py
+  s_1dcf832b515331::t_0ab56842313ba7 89-111,341-342
+src/ccgram/handlers/text/reply_quote.py
+  s_1dcf832b515331::t_56c8d4bbc2efb3 57,89
+tests/ccgram/handlers/guest/test_guest.py
+  s_1dcf832b515331::t_0fe66935cc3c70 1-31,38-132,140-171,173-201,203-214,216-283,285-336,338-340
+  s_1dcf832b515331::t_f10c61f35d05f7 32-37,202,215,284,337
+  s_1dcf832b515331::t_52a9720a80c2ef 341-348,350,352-354,356,361
+  s_1dcf832b515331::t_400028d784032b 133-139,172
+  s_1dcf832b515331::t_0861617e7014ea 349,351,355,357-360,362
+src/ccgram/handlers/status/topic_emoji.py
+  s_1dcf832b515331::t_9a69d24ad24eff 430
+src/ccgram/handlers/presence/desk_brief.py
+  s_1dcf832b515331::t_2201d37659c826 61-69,129-135,142,145-146,154-156
+src/ccgram/handlers/guest/framing.py
+  s_1dcf832b515331::t_a0a3d3c51ae999 1-37
+src/ccgram/handlers/guest/command.py
+  s_1dcf832b515331::t_80dce5a23f2675 1-38,42-110
+  s_1dcf832b515331::t_8e273f3096d2cd 39-41
+tests/ccgram/handlers/test_callback_registry.py
+  s_1dcf832b515331::t_d7799fe0e2c142 155-157
+src/ccgram/handlers/hook_events.py
+  s_1dcf832b515331::t_9a69d24ad24eff 341
+src/ccgram/handlers/callback_registry.py
+  s_1dcf832b515331::t_b92ba175080822 80-82
+src/ccgram/handlers/registry.py
+  s_1dcf832b515331::t_d7799fe0e2c142 246
+  s_1dcf832b515331::t_b7365aec9b3d5e 42
+  s_1dcf832b515331::t_56c8d4bbc2efb3 135
+.claude/rules/architecture.md
+  s_1dcf832b515331::t_6f540cc5148848 187-194
+docs/guides.md
+  s_1dcf832b515331::t_c7c8f1c2571cfd 240,280-299
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "63667042b492e0085407d0ee87fc62717099b791",
+  "prompts": {},
+  "sessions": {
+    "s_1dcf832b515331": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ad57b95f-05b2-44b6-a5c5-4304a027e8a3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "wyf-ACCEPT <importwyf@gmail.com>"
+    }
+  }
+}
