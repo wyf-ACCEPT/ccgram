@@ -49,6 +49,7 @@ _CONTROL_LABELS = {
     "sessions": "Sessions",
     "sync": "Audit state",
     "upgrade": "Update ccgram",
+    "usage": "Usage",
 }
 _SESSION_COMMANDS = (
     ("dashboard", "Dashboard"),

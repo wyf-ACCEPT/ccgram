@@ -126,7 +126,7 @@ def test_runtime_callback_registry_loads_the_command_panel():
     assert "cmdpanel:" in get_registry()
 
 
-async def test_default_slash_menu_contains_only_four_controls():
+async def test_default_slash_menu_contains_only_the_controls():
     bot = AsyncMock()
     await register_commands(bot)
     assert [cmd.command for cmd in bot.set_my_commands.call_args.args[0]] == [
@@ -134,6 +134,7 @@ async def test_default_slash_menu_contains_only_four_controls():
         "sessions",
         "sync",
         "upgrade",
+        "usage",
     ]
 
 
@@ -142,7 +143,13 @@ async def test_general_panel_has_no_session_or_agent_commands(panel_env, thread_
     env = panel_env
     await env.panel.send_command_panel(message(thread_id), 100)
     keyboard = env.reply.call_args.kwargs["reply_markup"]
-    assert labels(keyboard) == ["Commands", "Sessions", "Audit state", "Update ccgram"]
+    assert labels(keyboard) == [
+        "Commands",
+        "Sessions",
+        "Audit state",
+        "Update ccgram",
+        "Usage",
+    ]
     env.router.assert_not_called()
     env.resolve_provider.assert_not_called()
 
@@ -455,4 +462,4 @@ async def test_pin_permission_failure_keeps_panel_usable(panel_env):
     env.reply.return_value = sent
     await env.panel.send_command_panel(message(1), 100)
     sent.pin.assert_awaited_once_with(disable_notification=True)
-    assert len(labels(env.reply.call_args.kwargs["reply_markup"])) == 4
+    assert len(labels(env.reply.call_args.kwargs["reply_markup"])) == 5

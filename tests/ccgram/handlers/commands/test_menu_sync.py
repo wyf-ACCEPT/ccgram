@@ -184,7 +184,7 @@ async def test_startup_replaces_legacy_global_chat_and_member_menus(monkeypatch)
     assert BotCommandScopeChatMember(chat_id=-100888, user_id=200) in scopes
     assert all(
         [item.command for item in entry.args[0]]
-        == ["commands", "sessions", "sync", "upgrade"]
+        == ["commands", "sessions", "sync", "upgrade", "usage"]
         for entry in bot.set_my_commands.call_args_list
     )
 
