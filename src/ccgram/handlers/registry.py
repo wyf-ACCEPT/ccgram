@@ -47,6 +47,7 @@ from .file_handler import (
 from .guest.command import guest_command
 from .guest.scope import refuse_in_guest_chats
 from .inline import inline_query_handler, unsupported_content_handler
+from .usage_command import usage_command
 from .live import live_command, panes_command, screenshot_command
 from .presence.desk_mode import telegram_activity_handler
 from .messaging_pipeline import toolcalls_command, verbose_command
@@ -140,6 +141,7 @@ def register_all(
         CommandSpec("model", model_command),
         CommandSpec("provider", agent_command),  # alias
         CommandSpec("guest", guest_command),
+        CommandSpec("usage", usage_command),
     ]
 
     for spec in command_specs:
@@ -261,5 +263,6 @@ COMMAND_NAMES: tuple[str, ...] = (
     "model",
     "provider",
     "guest",
+    "usage",
 )
 """Sentinel for tests: the exact command names register_all installs, in order."""

@@ -90,6 +90,7 @@ _BOT_COMMANDS: list[tuple[str, str]] = [
     ("toolbar", "Show action toolbar"),
     ("verbose", "Toggle tool call batching"),
     ("upgrade", "Upgrade ccgram and restart"),
+    ("usage", "Claude and Codex plan limits"),
 ]
 
 CONTROL_COMMANDS: tuple[tuple[str, str], ...] = (
@@ -97,6 +98,7 @@ CONTROL_COMMANDS: tuple[tuple[str, str], ...] = (
     ("sessions", "Sessions dashboard"),
     ("sync", "Audit and fix state"),
     ("upgrade", "Upgrade ccgram and restart"),
+    ("usage", "Claude and Codex plan limits"),
 )
 
 # Telegram limits: max 100 commands, descriptions max 256 chars

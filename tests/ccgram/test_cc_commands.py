@@ -341,7 +341,7 @@ class TestRegisterCommands:
 
         assert [
             command.command for command in bot.set_my_commands.call_args.args[0]
-        ] == ["commands", "sessions", "sync", "upgrade"]
+        ] == ["commands", "sessions", "sync", "upgrade", "usage"]
 
     async def test_can_register_bot_commands_only(self, tmp_path: Path) -> None:
         bot = AsyncMock()
@@ -349,7 +349,7 @@ class TestRegisterCommands:
 
         registered = bot.set_my_commands.call_args[0][0]
         names = [c.command for c in registered]
-        assert names == ["commands", "sessions", "sync", "upgrade"]
+        assert names == ["commands", "sessions", "sync", "upgrade", "usage"]
 
     async def test_register_commands_supports_scope(self, tmp_path: Path) -> None:
         bot = AsyncMock()
