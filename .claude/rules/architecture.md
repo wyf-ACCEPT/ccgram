@@ -122,9 +122,9 @@ Top-level (constants, leaves, top-level commands):
 - `callback_registry.py` — prefix-based callback dispatch with self-registration decorator.
 - `cleanup.py` — topic teardown via TopicStateRegistry + async bot cleanup.
 - `command_history.py` — per-user/per-topic in-memory command recall (max 20).
-- `file_handler.py` — photo/document handler (save to `.ccgram-uploads/`, notify agent).
+- `file_handler.py` — photo/document/video/video-note/audio handler (save to `.ccgram-uploads/`, notify agent; refuses files over 20 MB up front with a clear reply, since the cloud Bot API's `getFile` stops there).
 - `hook_events.py` — dispatcher for `Stop`, `StopFailure`, `SessionEnd`, `Notification`, `Subagent*`, `Team*`.
-- `inline.py` — `inline_query_handler`, `unsupported_content_handler` (documented exception: no feature subpackage).
+- `inline.py` — `inline_query_handler`, `unsupported_content_handler` (documented exception: no feature subpackage). The unsupported-content hint also goes to a guest in their guest chat (strangers still get silence).
 - `last_reply.py` — `/last` command + `send_last_reply` backend; AI path walks the transcript for the last assistant turn, shell path extracts last command+output via prompt markers; overflows >4096 chars to a `.txt` document upload.
 - `reactions.py` — Telegram message reactions helper (Bot API 7.0+).
 - `registry.py` — central PTB handler registration (`register_all`): `CommandSpec` table + Message/Callback/Inline handler wiring. Documented exception: only handler module with runtime `from telegram.ext` import — the PTB wiring spine.

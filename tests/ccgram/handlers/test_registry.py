@@ -95,7 +95,7 @@ def test_register_all_registers_all_handler_kinds():
     assert by_kind.get(InlineQueryHandler) == 1
     # Pi menu reply input, command trace, group-join log, topic events, command
     # fallback, ordinary text, photo, document, voice, unsupported content.
-    assert by_kind.get(MessageHandler) == 11
+    assert by_kind.get(MessageHandler) == 12
     # Desk-mode presence: sees every update, consumes none.
     assert by_kind.get(TypeHandler) == 1
 
