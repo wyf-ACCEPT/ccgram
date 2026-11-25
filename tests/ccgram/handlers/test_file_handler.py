@@ -427,3 +427,91 @@ class TestResolveUploadDir:
         assert window_id == "@0"
         assert upload_path == expected_path
         assert error == expected_error
+
+
+def _awaited(mock: AsyncMock):
+    """The mock's last await, asserted present (narrows the Optional)."""
+    call = mock.await_args
+    assert call is not None
+    return call
+
+
+class TestVideoUploads:
+    """Videos, video notes and audio go through the same upload path as files."""
+
+    def _update(self, **media: object) -> SimpleNamespace:
+        fields = {"video": None, "video_note": None, "audio": None, **media}
+        message = SimpleNamespace(**fields)
+        return SimpleNamespace(effective_user=SimpleNamespace(id=7), message=message)
+
+    async def _run(self, update: SimpleNamespace, uploader=(1, True)) -> AsyncMock:
+        context = SimpleNamespace(bot_data={})
+        with (
+            patch.object(
+                file_handler,
+                "_resolve_uploader",
+                new_callable=AsyncMock,
+                return_value=uploader,
+            ),
+            patch.object(file_handler, "get_thread_id", return_value=42),
+            patch.object(file_handler, "adapter_for", return_value=MagicMock()),
+            patch.object(
+                file_handler, "_upload_and_notify", new_callable=AsyncMock
+            ) as mock_upload,
+        ):
+            await file_handler.handle_video_message(update, context)  # type: ignore[arg-type]
+        return mock_upload
+
+    async def test_video_keeps_its_name_and_flags_guest(self) -> None:
+        video = SimpleNamespace(
+            file_name="clip one.mp4",
+            file_id="fid",
+            file_unique_id="UNIQ1234xyz",
+            file_size=3_000_000,
+        )
+        mock_upload = await self._run(self._update(video=video))
+        mock_upload.assert_awaited_once()
+        args = _awaited(mock_upload)
+        assert args.args[1] == 1
+        assert args.args[3] == "clip_one.mp4"
+        assert args.args[4:7] == ("fid", 3_000_000, "Video")
+        assert "video" in args.args[7]
+        assert args.kwargs["is_guest"] is True
+
+    async def test_video_note_without_name_gets_generated_name(self) -> None:
+        note = SimpleNamespace(file_id="fid", file_unique_id="ABCDEFGHij", file_size=10)
+        mock_upload = await self._run(self._update(video_note=note))
+        filename = _awaited(mock_upload).args[3]
+        assert re.match(r"^videonote_\d{8}_\d{6}_ABCDEFGH\.mp4$", filename)
+
+    async def test_audio_is_labelled_audio(self) -> None:
+        audio = SimpleNamespace(
+            file_name="song.mp3", file_id="fid", file_unique_id="u", file_size=10
+        )
+        mock_upload = await self._run(self._update(audio=audio))
+        assert _awaited(mock_upload).args[6] == "Audio"
+
+    async def test_refused_uploader_stops(self) -> None:
+        video = SimpleNamespace(
+            file_name=None, file_id="fid", file_unique_id="u", file_size=10
+        )
+        mock_upload = await self._run(self._update(video=video), uploader=None)
+        mock_upload.assert_not_awaited()
+
+
+class TestDownloadSizeLimit:
+    async def test_over_20_mb_is_refused_before_download(self, tmp_path: Path) -> None:
+        """The cloud Bot API cannot serve getFile above 20 MB; say so up front."""
+        message = MagicMock()
+        message.get_bot.return_value.get_file = AsyncMock()
+        with patch.object(
+            file_handler, "safe_reply", new_callable=AsyncMock
+        ) as mock_reply:
+            saved = await file_handler._download_and_save(
+                message, tmp_path, "v.mp4", "fid", 25 * 1024 * 1024, "Video"
+            )
+        assert saved is None
+        message.get_bot.return_value.get_file.assert_not_awaited()
+        text = _awaited(mock_reply).args[1]
+        assert "Video too large (25.0 MB)" in text
+        assert "Maximum 20 MB" in text

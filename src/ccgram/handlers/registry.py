@@ -39,7 +39,11 @@ from .commands import (
     forward_command_handler,
     toolbar_command,
 )
-from .file_handler import handle_document_message, handle_photo_message
+from .file_handler import (
+    handle_document_message,
+    handle_photo_message,
+    handle_video_message,
+)
 from .guest.command import guest_command
 from .guest.scope import refuse_in_guest_chats
 from .inline import inline_query_handler, unsupported_content_handler
@@ -203,6 +207,12 @@ def register_all(
         MessageHandler(filters.Document.ALL & group_filter, handle_document_message)
     )
     application.add_handler(
+        MessageHandler(
+            (filters.VIDEO | filters.VIDEO_NOTE | filters.AUDIO) & group_filter,
+            handle_video_message,
+        )
+    )
+    application.add_handler(
         MessageHandler(filters.VOICE & group_filter, handle_voice_message)
     )
     application.add_handler(
@@ -212,6 +222,9 @@ def register_all(
             & ~filters.PHOTO
             & ~filters.Document.ALL
             & ~filters.VOICE
+            & ~filters.VIDEO
+            & ~filters.VIDEO_NOTE
+            & ~filters.AUDIO
             & ~filters.StatusUpdate.ALL
             & group_filter,
             unsupported_content_handler,

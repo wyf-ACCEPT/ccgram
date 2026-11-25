@@ -1,4 +1,4 @@
-"""Photo and document message handlers for forwarding files to Claude Code.
+"""Photo, document, video and audio handlers for forwarding files to Claude Code.
 
 Saves uploaded files to `.ccgram-uploads/` in the session's cwd, then sends
 Claude a natural-language message with the absolute path so it can read the
@@ -7,6 +7,7 @@ file via its Read tool.
 Key handlers:
   - handle_photo_message: handles filters.PHOTO
   - handle_document_message: handles filters.Document.ALL
+  - handle_video_message: handles filters.VIDEO, VIDEO_NOTE and AUDIO
 """
 
 from __future__ import annotations
@@ -44,8 +45,10 @@ _UPLOAD_DIR = ".ccgram-uploads"
 
 _MAX_FILENAME_BYTES = 200
 
-# Max file size in bytes (50 MB — Telegram Bot API limit for getFile)
-_MAX_FILE_SIZE = 50 * 1024 * 1024
+# Max file size in bytes. The cloud Bot API serves getFile only up to 20 MB
+# (50 MB is the *upload* limit), so anything larger fails to download anyway;
+# refusing it up front gives the sender a clear reason instead of a generic error.
+_MAX_FILE_SIZE = 20 * 1024 * 1024
 
 _FILENAME_PUNCT = frozenset("._-")
 
@@ -143,6 +146,31 @@ def _generate_photo_filename(file_unique_id: str) -> str:
     return f"photo_{timestamp}_{short_id}.jpg"
 
 
+def _generate_media_filename(prefix: str, file_unique_id: str, suffix: str) -> str:
+    """Generate a media filename: <prefix>_YYYYMMDD_HHMMSS_<8chars><suffix>."""
+    timestamp = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
+    return f"{prefix}_{timestamp}_{file_unique_id[:8]}{suffix}"
+
+
+# Telegram media that arrive as their own message types rather than as a
+# document: (attribute, label, filename prefix, default suffix, emoji).
+_MEDIA_KINDS = (
+    ("video", "Video", "video", ".mp4", "\U0001f3ac"),
+    ("video_note", "Video", "videonote", ".mp4", "\U0001f3ac"),
+    ("audio", "Audio", "audio", ".mp3", "\U0001f3b5"),
+)
+
+
+def _too_large_text(size_label: str, size: int) -> str:
+    size_mb = size / (1024 * 1024)
+    limit_mb = _MAX_FILE_SIZE // (1024 * 1024)
+    return (
+        f"\u274c {size_label} too large ({size_mb:.1f} MB). Maximum {limit_mb} MB: "
+        "Telegram does not let bots download bigger files. Compress it, split it, "
+        "or send screenshots instead."
+    )
+
+
 def _resolve_upload_dir(
     user_id: int, thread_id: int | None, chat_id: int | None = None
 ) -> tuple[str | None, Path | None, str | None]:
@@ -188,11 +216,7 @@ async def _download_and_save(
     """
     # Pre-download size check
     if file_size is not None and file_size > _MAX_FILE_SIZE:
-        size_mb = file_size / (1024 * 1024)
-        await safe_reply(
-            message,
-            f"\u274c {size_label} too large ({size_mb:.1f} MB). Maximum {_MAX_FILE_SIZE // (1024 * 1024)} MB.",
-        )
+        await safe_reply(message, _too_large_text(size_label, file_size))
         return None
 
     try:
@@ -215,11 +239,7 @@ async def _download_and_save(
         actual_size = dest.stat().st_size
         if actual_size > _MAX_FILE_SIZE:
             dest.unlink(missing_ok=True)
-            size_mb = actual_size / (1024 * 1024)
-            await safe_reply(
-                message,
-                f"\u274c {size_label} too large ({size_mb:.1f} MB). Maximum {_MAX_FILE_SIZE // (1024 * 1024)} MB.",
-            )
+            await safe_reply(message, _too_large_text(size_label, actual_size))
             return None
     except (OSError, TelegramError) as e:
         logger.error("Failed to save %s: %s", size_label.lower(), e)
@@ -420,6 +440,48 @@ async def handle_document_message(
         "File",
         "I've uploaded {name} to {path}",
         "\U0001f4ce",
+        adapter=adapter_for(context.bot_data),
+        is_guest=is_guest,
+    )
+
+
+async def handle_video_message(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    """Handle videos, video notes and audio: save to .ccgram-uploads/ and notify the agent."""
+    user = update.effective_user
+    message = update.message
+    if not user or not message:
+        return
+    kind = next(
+        (k for k in _MEDIA_KINDS if getattr(message, k[0], None) is not None), None
+    )
+    if kind is None:
+        return
+    attr, size_label, prefix, default_suffix, emoji = kind
+    media = getattr(message, attr)
+    uploader = await _resolve_uploader(update, message)
+    if uploader is None:
+        return
+    acting_user_id, is_guest = uploader
+
+    original = getattr(media, "file_name", None)
+    filename = (
+        _sanitize_filename(original)
+        if original
+        else _generate_media_filename(prefix, media.file_unique_id, default_suffix)
+    )
+    noun = size_label.lower()
+    await _upload_and_notify(
+        message,
+        acting_user_id,
+        get_thread_id(update),
+        filename,
+        media.file_id,
+        media.file_size,
+        size_label,
+        f"I've uploaded a {noun} to {{path}} — please take a look.",
+        emoji,
         adapter=adapter_for(context.bot_data),
         is_guest=is_guest,
     )
