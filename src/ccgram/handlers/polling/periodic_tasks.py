@@ -20,6 +20,7 @@ from ...session_protocol.telegram import TelegramSessionAdapter
 from ..live.live_view import tick_live_views
 from ..presence.desk_mode import run_desk_mode_tick
 from ..guest.outbox import flush_outboxes
+from ..usage_command import observe_claude_usage
 from .delivery_watch import check_delivery_wedges
 from ..topics.topic_deletion import cleanup_retired_topics
 from ..topics.topic_provisioning_recovery import recover_topic_provisioning
@@ -67,6 +68,8 @@ async def run_periodic_tasks(
     if now - timers.setdefault("guest_outbox", 0.0) >= GUEST_OUTBOX_INTERVAL:
         timers["guest_outbox"] = now
         await flush_outboxes(client)
+        # Same 5 s cadence: fold the latest Claude usage snapshot into the merge.
+        observe_claude_usage()
 
     if now - timers["topic_check"] >= TOPIC_CHECK_INTERVAL:
         timers["topic_check"] = now
