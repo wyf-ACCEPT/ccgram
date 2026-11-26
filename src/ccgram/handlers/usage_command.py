@@ -294,14 +294,19 @@ def read_codex_usage(roots: list[Path] | None = None) -> UsageReport | None:
     return best
 
 
-def _duration(seconds: float) -> str:
+# At or above this usage the exact minutes until a reset matter; below it
+# "in 5h" reads better than "in 5h 10m".
+_PRECISE_FROM_PERCENT = 80
+
+
+def _duration(seconds: float, *, minutes_with_hours: bool = True) -> str:
     minutes = max(0, int(seconds // 60))
     days, rest = divmod(minutes, 1440)
     hours, mins = divmod(rest, 60)
     if days:
         return f"{days}d {hours}h"
     if hours:
-        return f"{hours}h {mins}m"
+        return f"{hours}h {mins}m" if minutes_with_hours else f"{hours}h"
     return f"{mins}m"
 
 
@@ -330,7 +335,7 @@ def _window_line(window: UsageWindow, now: datetime) -> str:
     if window.resets_at is not None:
         line += (
             f" · resets {_clock(window.resets_at, now)}"
-            f" (in {_duration((window.resets_at - now).total_seconds())})"
+            f" (in {_duration((window.resets_at - now).total_seconds(), minutes_with_hours=used >= _PRECISE_FROM_PERCENT)})"
         )
     return line
 

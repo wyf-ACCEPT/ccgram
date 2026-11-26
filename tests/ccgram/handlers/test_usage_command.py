@@ -125,7 +125,7 @@ class TestFormat:
         text = usage.format_usage(claude, codex, now=NOW)
         assert "Claude (as of" in text and "3m ago" in text
         assert "• 5h: ▓▓▓▓░░░░░░ 42%" in text
-        assert "(in 2h 0m)" in text
+        assert "(in 2h)" in text
         assert "• 7d: ▓▓▓▓▓▓▓░░░ 70%" in text and "(in 4d 18h)" in text
         assert "Codex (as of" in text and "1h 0m ago" in text
         assert "• 7d: ▓░░░░░░░░░ 11%" in text
@@ -271,3 +271,14 @@ def test_missing_window_reads_not_reported() -> None:
     text = usage.format_usage(report, None, now=NOW)
     assert "• 5h: not reported" in text
     assert "?" not in text
+
+
+def test_reset_minutes_shown_only_from_80_percent() -> None:
+    def line(used: float) -> str:
+        window = usage.UsageWindow("5h", used, NOW + timedelta(hours=5, minutes=10))
+        return usage._window_line(window, NOW)
+
+    assert line(79).endswith("(in 5h)")
+    assert line(80).endswith("(in 5h 10m)")
+    soon = usage.UsageWindow("5h", 10, NOW + timedelta(minutes=22))
+    assert usage._window_line(soon, NOW).endswith("(in 22m)")
