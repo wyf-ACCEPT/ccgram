@@ -77,7 +77,9 @@ class TopicProvisioning:
 
     A record remains present until the caller can prove that creation either
     committed or failed safely.  ``created_at`` is diagnostic metadata only;
-    it must never be used as an expiry or deletion decision. A replacement
+    it must never be used as an expiry or deletion decision, except by the
+    opt-in ``CCGRAM_UNCERTAIN_TOPIC_EXPIRE_MIN`` give-up of an uncertain
+    no-topic claim (``topic_provisioning_recovery._expire_uncertain_claim``). A replacement
     keeps its deleted topic in ``retry_thread_id`` while its new topic is being
     created or retried.
     """

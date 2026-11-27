@@ -1040,3 +1040,75 @@ async def test_recreation_readiness_probe_cannot_commit_changed_claim():
         ) == {"changed": 1}
     create.assert_not_awaited()
     assert router.iter_topic_provisionings()[0].target_id == "@3"
+
+
+def _uncertain_claim(*, age_s: float, target_id: str = "@2"):
+    """A no-topic claim whose createForumTopic outcome was never learned."""
+    original = _router()
+    original.begin_topic_provisioning(
+        1, -100, thread_id=None, target_id=target_id, kind="topic_for_target"
+    )
+    data = original.to_dict()
+    for raw in data["topic_provisioning"]:
+        raw["uncertain"] = True
+        raw["created_at"] = raw["created_at"] - age_s
+    restored = _router()
+    restored.from_dict(data)
+    [claim] = restored.iter_topic_provisionings()
+    return restored, claim
+
+
+async def _recover_with(router, presence, expire_s: float):
+    with (
+        patch(
+            "ccgram.handlers.topics.topic_provisioning_recovery.config.uncertain_topic_expire_seconds",
+            expire_s,
+        ),
+        patch(
+            "ccgram.handlers.topics.topic_provisioning_recovery.window_presence",
+            new_callable=AsyncMock,
+            return_value=presence,
+        ) as probe,
+    ):
+        outcome = await recover_topic_provisioning(
+            AsyncMock(), router=router, adapter=_adapter()
+        )
+    return outcome, probe
+
+
+async def test_uncertain_claim_stays_protected_by_default():
+    router, claim = _uncertain_claim(age_s=86_400)
+    outcome, probe = await _recover_with(router, True, 0.0)
+    assert outcome == {"unresolved": 1}
+    probe.assert_not_awaited()
+    assert router.iter_topic_provisionings() == [claim]
+
+
+async def test_young_uncertain_claim_is_kept_when_opted_in():
+    router, claim = _uncertain_claim(age_s=60)
+    outcome, probe = await _recover_with(router, True, 600.0)
+    assert outcome == {"unresolved": 1}
+    probe.assert_not_awaited()
+    assert router.iter_topic_provisionings() == [claim]
+
+
+async def test_old_uncertain_claim_for_live_target_is_given_up():
+    router, _ = _uncertain_claim(age_s=900)
+    outcome, _ = await _recover_with(router, True, 600.0)
+    assert outcome == {"expired": 1}
+    assert router.iter_topic_provisionings() == []
+    assert router.has_target_provisioning("@2") is False
+
+
+async def test_old_uncertain_claim_for_closed_target_is_released():
+    router, _ = _uncertain_claim(age_s=900)
+    outcome, _ = await _recover_with(router, False, 600.0)
+    assert outcome == {"released": 1}
+    assert router.iter_topic_provisionings() == []
+
+
+async def test_old_uncertain_claim_with_unknown_presence_is_kept():
+    router, claim = _uncertain_claim(age_s=900)
+    outcome, _ = await _recover_with(router, None, 600.0)
+    assert outcome == {"unresolved": 1}
+    assert router.iter_topic_provisionings() == [claim]

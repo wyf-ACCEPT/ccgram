@@ -154,6 +154,22 @@ def _skip_barrier_deadline_s() -> float:
     return max(60.0, value)
 
 
+def _uncertain_topic_expire_seconds() -> float:
+    """Age after which an uncertain no-topic claim is given up (0 = never).
+
+    Off by default: the upstream rule is that such a claim is resolved from
+    evidence only. Opting in trades a rare duplicate topic for a session that
+    otherwise never gets one after a network drop mid-createForumTopic.
+    """
+    try:
+        value = float(os.getenv("CCGRAM_UNCERTAIN_TOPIC_EXPIRE_MIN") or 0.0)
+    except ValueError:
+        return 0.0
+    if not math.isfinite(value) or value <= 0:
+        return 0.0
+    return value * 60.0
+
+
 def _delivery_watch_gap_bytes() -> int:
     """Delivery-wedge gap threshold in bytes, floored at 0 (disable) and
     tolerant of empty or non-numeric input so a bad env value cannot break
@@ -384,6 +400,7 @@ class Config:
         )
         self.skip_barrier_deadline_s = _skip_barrier_deadline_s()
         self.delivery_watch_gap_bytes = _delivery_watch_gap_bytes()
+        self.uncertain_topic_expire_seconds = _uncertain_topic_expire_seconds()
 
         # Multi-instance support
         group_id_str = os.getenv("CCGRAM_GROUP_ID")

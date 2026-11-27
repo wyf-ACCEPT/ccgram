@@ -468,3 +468,14 @@ class TestWorkspaceFolders:
             "Sessions": str(Path.home() / "r/s"),
             "Trading": "/b/t",
         }
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [("", 0.0), ("10", 600.0), ("0", 0.0), ("-5", 0.0), ("nan", 0.0), ("x", 0.0)],
+)
+def test_uncertain_topic_expire_minutes(monkeypatch, raw, expected):
+    from ccgram.config import _uncertain_topic_expire_seconds
+
+    monkeypatch.setenv("CCGRAM_UNCERTAIN_TOPIC_EXPIRE_MIN", raw)
+    assert _uncertain_topic_expire_seconds() == expected

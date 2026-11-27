@@ -10,6 +10,7 @@ import structlog
 from telegram.error import RetryAfter
 
 from ... import window_query
+from ...config import config
 from ...multiplexer.base import canonical_window_id
 from ...multiplexer.reconciliation import window_presence
 from ...session_protocol.telegram import TelegramSessionAdapter
@@ -440,6 +441,68 @@ async def _recover_claim(
     return await _recover_retry_topic(client, router, backend, claim, adapter)
 
 
+def _skip_outcome(claim: TopicProvisioning) -> str | None:
+    """Why a no-topic claim is left alone this pass, or None to probe it."""
+    if claim.thread_id is not None:
+        return None
+    if claim.retry_thread_id is None or claim.uncertain:
+        return "unresolved"
+    if claim.retry_at > time.time():
+        return "deferred"
+    return None
+
+
+def _uncertain_claim_expired(claim: TopicProvisioning, now: float) -> bool:
+    """Whether the opt-in give-up applies to this claim (see config)."""
+    limit = config.uncertain_topic_expire_seconds
+    return (
+        limit > 0
+        and claim.uncertain
+        and claim.kind == "topic_for_target"
+        and claim.thread_id is None
+        and claim.retry_thread_id is None
+        and claim.target_id is not None
+        and now - claim.created_at >= limit
+    )
+
+
+async def _expire_uncertain_claim(
+    router: ThreadRouter, backend: object | None, claim: TopicProvisioning
+) -> str:
+    """Give up an old uncertain no-topic claim so the target can get a topic.
+
+    The createForumTopic outcome was never learned, so the topic may exist
+    unbound; dropping the claim accepts that rare duplicate. A closed target
+    is simply released; a live one is left for discovery to adopt again.
+    """
+    assert claim.target_id is not None
+    async with _window_topic_lock(canonical_window_id(claim.target_id)):
+        if not _claim_is_current(router, claim):
+            return "changed"
+        presence = await window_presence(claim.target_id, backend)
+        if presence is None:
+            return "unresolved"
+        try:
+            router.abort_topic_provisioning(
+                claim.claim_id,
+                target_confirmed_absent=not presence,
+                topic_confirmed_absent=bool(presence),
+            )
+        except KeyError, TypeError, ValueError:
+            return "changed"
+        if router.get_topic_provisioning(claim.claim_id) is not None:
+            return "unresolved"
+        session_manager.flush_state()
+    logger.warning(
+        "Gave up an uncertain topic claim",
+        target_id=claim.target_id,
+        chat_id=claim.chat_id,
+        age_min=round((time.time() - claim.created_at) / 60),
+        target_alive=bool(presence),
+    )
+    return "expired" if presence else "released"
+
+
 async def recover_topic_provisioning(
     client: TelegramClient,
     *,
@@ -459,18 +522,13 @@ async def recover_topic_provisioning(
             continue
         if probes >= limit:
             break
-        if claim.thread_id is None and claim.retry_thread_id is None:
-            outcomes["unresolved"] += 1
+        if _uncertain_claim_expired(claim, time.time()):
+            probes += 1
+            outcomes[await _expire_uncertain_claim(router, backend, claim)] += 1
             continue
-        if claim.thread_id is None and claim.uncertain:
-            outcomes["unresolved"] += 1
-            continue
-        if (
-            claim.thread_id is None
-            and not claim.uncertain
-            and claim.retry_at > time.time()
-        ):
-            outcomes["deferred"] += 1
+        skipped = _skip_outcome(claim)
+        if skipped is not None:
+            outcomes[skipped] += 1
             continue
         probes += 1
         outcome = await _recover_claim(client, router, backend, claim, adapter)
