@@ -123,7 +123,8 @@ class TestFormat:
         claude = usage.parse_claude_snapshot(_claude_raw())
         codex = usage.parse_codex_record(_codex_line(NOW - timedelta(hours=1), 11.0))
         text = usage.format_usage(claude, codex, now=NOW)
-        assert "Claude (as of" in text and "3m ago" in text
+        assert "Claude (last snapshot" in text and "3m ago" in text
+        assert "· read" not in text
         assert "• 5h: ▓▓▓▓░░░░░░ 42%" in text
         assert "(in 2h)" in text
         assert "• 7d: ▓▓▓▓▓▓▓░░░ 70%" in text and "(in 4d 18h)" in text
@@ -282,3 +283,43 @@ def test_reset_minutes_shown_only_from_80_percent() -> None:
     assert line(80).endswith("(in 5h 10m)")
     soon = usage.UsageWindow("5h", 10, NOW + timedelta(minutes=22))
     assert usage._window_line(soon, NOW).endswith("(in 22m)")
+
+
+class TestReadingTimes:
+    """A kept older reading must not borrow the newer snapshot's time."""
+
+    def _snapshot(self, at: datetime, seven_day: float) -> dict:
+        raw = _claude_raw()
+        raw["updated_at"] = _iso(at)
+        raw["seven_day"]["used_percentage"] = seven_day
+        return raw
+
+    def test_kept_higher_reading_shows_its_own_time(self, tmp_path: Path) -> None:
+        source, store = tmp_path / "claude-usage.json", tmp_path / "merged.json"
+        t0, t1 = NOW - timedelta(minutes=20), NOW
+        tracker = usage.ClaudeUsageTracker(source, store)
+        source.write_text(json.dumps(self._snapshot(t0, 79)))
+        tracker.observe(NOW)
+        source.write_text(json.dumps(self._snapshot(t1, 71)))
+        os.utime(source, (NOW.timestamp() + 10, NOW.timestamp() + 10))
+        merged = tracker.observe(NOW)
+        assert merged is not None
+        seven = next(w for w in merged.windows if w.label == "7d")
+        assert (seven.used_percent, seven.seen_at) == (79, t0)
+        text = usage.format_usage(merged, None, now=NOW)
+        assert f"Claude (last snapshot {usage._clock(t1, NOW)}" in text
+        line = next(x for x in text.splitlines() if x.startswith("• 7d"))
+        assert "79%" in line and line.endswith(f"· read {usage._clock(t0, NOW)}")
+        five = next(x for x in text.splitlines() if x.startswith("• 5h"))
+        assert "· read" not in five
+
+        # The reading time survives a restart through the merged file.
+        again = usage.ClaudeUsageTracker(tmp_path / "missing.json", store).observe(NOW)
+        assert again is not None
+        assert next(w for w in again.windows if w.label == "7d").seen_at == t0
+
+    def test_equal_reading_refreshes_the_time(self) -> None:
+        t0 = NOW - timedelta(minutes=20)
+        old = usage.UsageWindow("7d", 79, NOW + timedelta(days=3), t0)
+        new = usage.UsageWindow("7d", 79, NOW + timedelta(days=3), NOW)
+        assert usage.merge_window(old, new, NOW) == new

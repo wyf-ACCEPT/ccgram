@@ -57,6 +57,9 @@ class UsageWindow:
     label: str
     used_percent: float | None
     resets_at: datetime | None
+    # When this reading was taken. A merged report keeps each window's own
+    # time, since a kept higher reading can be older than the latest snapshot.
+    seen_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -105,6 +108,7 @@ def parse_claude_snapshot(raw: object) -> UsageReport | None:
                     label,
                     _percent(entry.get("used_percentage")),
                     _parse_time(entry.get("resets_at")),
+                    _parse_time(entry.get("seen_at")) or as_of,
                 )
             )
     return UsageReport("Claude", as_of, tuple(windows)) if windows else None
@@ -142,6 +146,7 @@ def parse_codex_record(line: str) -> UsageReport | None:
                     _window_label(entry.get("window_minutes")),
                     _percent(entry.get("used_percent")),
                     _parse_time(entry.get("resets_at")),
+                    as_of,
                 )
             )
     return UsageReport("Codex", as_of, tuple(windows)) if windows else None
@@ -208,6 +213,7 @@ def _snapshot_dict(report: UsageReport) -> dict:
             out[keys[window.label]] = {
                 "used_percentage": window.used_percent,
                 "resets_at": window.resets_at.isoformat() if window.resets_at else None,
+                "seen_at": window.seen_at.isoformat() if window.seen_at else None,
             }
     return out
 
@@ -322,7 +328,25 @@ def _bar(percent: float) -> str:
     return "▓" * filled + "░" * (_BAR_CELLS - filled)
 
 
-def _window_line(window: UsageWindow, now: datetime) -> str:
+# A window read this much earlier than the latest snapshot names its own time.
+_OLDER_READING_S = 60
+
+
+def _window_line(
+    window: UsageWindow, now: datetime, snapshot_at: datetime | None = None
+) -> str:
+    line = _window_text(window, now)
+    seen = window.seen_at
+    if (
+        seen is not None
+        and snapshot_at is not None
+        and (snapshot_at - seen).total_seconds() >= _OLDER_READING_S
+    ):
+        line += f" · read {_clock(seen, now)}"
+    return line
+
+
+def _window_text(window: UsageWindow, now: datetime) -> str:
     used = window.used_percent
     if used is None:
         return f"• {window.label}: not reported"
@@ -361,8 +385,11 @@ def format_usage(
                 lines.append("Codex: no rate limits found in recent Codex sessions.")
             continue
         age = _duration((now - report.as_of).total_seconds())
-        lines.append(f"{name} (as of {_clock(report.as_of, now)}, {age} ago)")
-        lines.extend(_window_line(w, now) for w in report.windows)
+        # Claude's is a merge: the time is the latest snapshot, and a window
+        # whose kept reading is older says so on its own line.
+        when = "last snapshot" if name == "Claude" else "as of"
+        lines.append(f"{name} ({when} {_clock(report.as_of, now)}, {age} ago)")
+        lines.extend(_window_line(w, now, report.as_of) for w in report.windows)
     return "\n".join(lines)
 
 
