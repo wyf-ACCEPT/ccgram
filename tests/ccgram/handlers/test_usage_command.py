@@ -5,7 +5,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from ccgram.handlers import usage_command as usage
 
@@ -123,9 +123,10 @@ class TestFormat:
         claude = usage.parse_claude_snapshot(_claude_raw())
         codex = usage.parse_codex_record(_codex_line(NOW - timedelta(hours=1), 11.0))
         text = usage.format_usage(claude, codex, now=NOW)
-        assert "Claude (as of" in text and "3m ago" in text
+        assert "Claude (last snapshot" in text and "3m ago" in text
+        assert "· read" not in text
         assert "• 5h: ▓▓▓▓░░░░░░ 42%" in text
-        assert "(in 2h 0m)" in text
+        assert "(in 2h)" in text
         assert "• 7d: ▓▓▓▓▓▓▓░░░ 70%" in text and "(in 4d 18h)" in text
         assert "Codex (as of" in text and "1h 0m ago" in text
         assert "• 7d: ▓░░░░░░░░░ 11%" in text
@@ -156,7 +157,11 @@ class TestCommand:
     async def _run(self, allowed: bool) -> AsyncMock:
         with (
             patch.object(usage.config, "is_user_allowed", return_value=allowed),
-            patch.object(usage, "read_claude_usage", return_value=None),
+            patch.object(
+                usage,
+                "claude_usage_tracker",
+                MagicMock(observe=MagicMock(return_value=None)),
+            ),
             patch.object(usage, "read_codex_usage", return_value=None),
             patch.object(usage, "safe_reply", new_callable=AsyncMock) as mock_reply,
         ):
@@ -171,3 +176,150 @@ class TestCommand:
     async def test_others_get_nothing(self) -> None:
         mock_reply = await self._run(allowed=False)
         mock_reply.assert_not_awaited()
+
+
+def _win(
+    label: str, used: float | None, reset_in_h: float | None
+) -> "usage.UsageWindow":
+    reset = None if reset_in_h is None else NOW + timedelta(hours=reset_in_h)
+    return usage.UsageWindow(label, used, reset)
+
+
+class TestMerge:
+    """Stale sessions must not drag the numbers back (see module docs)."""
+
+    def test_same_window_keeps_the_higher_reading(self) -> None:
+        old, new = _win("7d", 79, 90), _win("7d", 71, 90)
+        assert usage.merge_window(old, new, NOW) == old
+        assert usage.merge_window(new, old, NOW) == old
+
+    def test_later_reset_is_a_newer_window(self) -> None:
+        old, new = _win("5h", 90, 1), _win("5h", 2, 5)
+        assert usage.merge_window(old, new, NOW) == new
+        # ...and a reading from the previous window does not come back.
+        assert usage.merge_window(new, old, NOW) == new
+
+    def test_empty_reading_never_replaces_a_known_one(self) -> None:
+        old = _win("5h", 2, 4)
+        assert usage.merge_window(old, _win("5h", None, None), NOW) == old
+        assert usage.merge_window(old, None, NOW) == old
+        assert usage.merge_window(None, old, NOW) == old
+
+    def test_expired_window_gives_way(self) -> None:
+        old, new = _win("5h", 97, -0.5), _win("5h", 1, None)
+        assert usage.merge_window(old, new, NOW) == new
+
+    def test_reports_merge_per_label(self) -> None:
+        old = usage.UsageReport(
+            "Claude", NOW - timedelta(minutes=5), (_win("5h", 2, 4), _win("7d", 79, 90))
+        )
+        new = usage.UsageReport(
+            "Claude", NOW, (_win("5h", None, None), _win("7d", 71, 90))
+        )
+        merged = usage.merge_reports(old, new, NOW)
+        assert merged is not None
+        assert merged.as_of == NOW
+        assert [(w.label, w.used_percent) for w in merged.windows] == [
+            ("5h", 2),
+            ("7d", 79),
+        ]
+
+
+class TestTracker:
+    def test_merges_snapshots_and_survives_restart(self, tmp_path: Path) -> None:
+        source, store = tmp_path / "claude-usage.json", tmp_path / "merged.json"
+        fresh = _claude_raw()
+        fresh["five_hour"]["used_percentage"] = 2
+        fresh["seven_day"]["used_percentage"] = 79
+        source.write_text(json.dumps(fresh))
+        tracker = usage.ClaudeUsageTracker(source, store)
+        first = tracker.observe(NOW)
+        assert first is not None
+
+        stale = _claude_raw(five_hour={"used_percentage": None, "resets_at": None})
+        stale["updated_at"] = _iso(NOW)
+        source.write_text(json.dumps(stale))
+        os.utime(source, (NOW.timestamp() + 10, NOW.timestamp() + 10))
+        merged = tracker.observe(NOW)
+        assert merged is not None
+        assert [(w.label, w.used_percent) for w in merged.windows] == [
+            ("5h", 2),
+            ("7d", 79),
+        ]
+
+        restarted = usage.ClaudeUsageTracker(tmp_path / "missing.json", store)
+        again = restarted.observe(NOW)
+        assert again is not None
+        assert [(w.label, w.used_percent) for w in again.windows] == [
+            ("5h", 2),
+            ("7d", 79),
+        ]
+
+    def test_unchanged_file_is_not_reread(self, tmp_path: Path) -> None:
+        source, store = tmp_path / "claude-usage.json", tmp_path / "merged.json"
+        source.write_text(json.dumps(_claude_raw()))
+        tracker = usage.ClaudeUsageTracker(source, store)
+        tracker.observe(NOW)
+        with patch.object(usage, "read_claude_usage") as mock_read:
+            tracker.observe(NOW)
+        mock_read.assert_not_called()
+
+
+def test_missing_window_reads_not_reported() -> None:
+    report = usage.UsageReport(
+        "Claude", NOW, (_win("5h", None, None), _win("7d", 71, 90))
+    )
+    text = usage.format_usage(report, None, now=NOW)
+    assert "• 5h: not reported" in text
+    assert "?" not in text
+
+
+def test_reset_minutes_shown_only_from_80_percent() -> None:
+    def line(used: float) -> str:
+        window = usage.UsageWindow("5h", used, NOW + timedelta(hours=5, minutes=10))
+        return usage._window_line(window, NOW)
+
+    assert line(79).endswith("(in 5h)")
+    assert line(80).endswith("(in 5h 10m)")
+    soon = usage.UsageWindow("5h", 10, NOW + timedelta(minutes=22))
+    assert usage._window_line(soon, NOW).endswith("(in 22m)")
+
+
+class TestReadingTimes:
+    """A kept older reading must not borrow the newer snapshot's time."""
+
+    def _snapshot(self, at: datetime, seven_day: float) -> dict:
+        raw = _claude_raw()
+        raw["updated_at"] = _iso(at)
+        raw["seven_day"]["used_percentage"] = seven_day
+        return raw
+
+    def test_kept_higher_reading_shows_its_own_time(self, tmp_path: Path) -> None:
+        source, store = tmp_path / "claude-usage.json", tmp_path / "merged.json"
+        t0, t1 = NOW - timedelta(minutes=20), NOW
+        tracker = usage.ClaudeUsageTracker(source, store)
+        source.write_text(json.dumps(self._snapshot(t0, 79)))
+        tracker.observe(NOW)
+        source.write_text(json.dumps(self._snapshot(t1, 71)))
+        os.utime(source, (NOW.timestamp() + 10, NOW.timestamp() + 10))
+        merged = tracker.observe(NOW)
+        assert merged is not None
+        seven = next(w for w in merged.windows if w.label == "7d")
+        assert (seven.used_percent, seven.seen_at) == (79, t0)
+        text = usage.format_usage(merged, None, now=NOW)
+        assert f"Claude (last snapshot {usage._clock(t1, NOW)}" in text
+        line = next(x for x in text.splitlines() if x.startswith("• 7d"))
+        assert "79%" in line and line.endswith(f"· read {usage._clock(t0, NOW)}")
+        five = next(x for x in text.splitlines() if x.startswith("• 5h"))
+        assert "· read" not in five
+
+        # The reading time survives a restart through the merged file.
+        again = usage.ClaudeUsageTracker(tmp_path / "missing.json", store).observe(NOW)
+        assert again is not None
+        assert next(w for w in again.windows if w.label == "7d").seen_at == t0
+
+    def test_equal_reading_refreshes_the_time(self) -> None:
+        t0 = NOW - timedelta(minutes=20)
+        old = usage.UsageWindow("7d", 79, NOW + timedelta(days=3), t0)
+        new = usage.UsageWindow("7d", 79, NOW + timedelta(days=3), NOW)
+        assert usage.merge_window(old, new, NOW) == new

@@ -133,7 +133,7 @@ Top-level (constants, leaves, top-level commands):
 - `split_command.py` — `/split [command]` — adds a sibling pane to the topic's window via `multiplexer.split_window`; optional arg runs in the new pane (e.g. `/split claude` spawns a sibling agent). New pane surfaced via `/panes`. Backend-neutral.
 - `sync_command.py` — `/sync`.
 - `upgrade.py` — `/upgrade` (`uv tool upgrade` + restart).
-- `usage_command.py` — owner-only `/usage`: Claude 5h/7d limits from the claude-hud snapshot (`display.externalUsageWritePath` → `CCGRAM_CLAUDE_USAGE_FILE`, default `~/.ccgram/claude-usage.json`) and Codex windows from the newest `rate_limits` record in recent rollout files (`codex_session_roots`); no credentials, file reads in `asyncio.to_thread`. Also in the control menu and the command panel.
+- `usage_command.py` — owner-only `/usage`: Claude 5h/7d limits from the claude-hud snapshot (`display.externalUsageWritePath` → `CCGRAM_CLAUDE_USAGE_FILE`, default `~/.ccgram/claude-usage.json`) and Codex windows from the newest `rate_limits` record in recent rollout files (`codex_session_roots`); no credentials, file reads in `asyncio.to_thread`. Every Claude session's status line overwrites the one snapshot with its own (possibly stale) limits, so `ClaudeUsageTracker` (polled every 5 s from `periodic_tasks`) merges what it sees: same reset time → higher reading, later reset → newer window, an empty window never replaces a known one; the merge persists in `~/.ccgram/claude-usage-merged.json`. Also in the control menu and the command panel.
 - `user_state.py` — `context.user_data` string key constants.
 
 `handlers/commands/` — `/commands` + `/toolbar` orchestration:
